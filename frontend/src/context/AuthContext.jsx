@@ -29,6 +29,26 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, [initAuth]);
 
+  const extractFieldErrors = (err) => {
+    const responseData = err.response?.data;
+    if (!responseData || typeof responseData !== 'object') return {};
+
+    const errorsObj = responseData.errors || responseData;
+    if (!errorsObj || typeof errorsObj !== 'object' || Array.isArray(errorsObj)) return {};
+
+    const fieldErrors = {};
+    Object.keys(errorsObj).forEach((key) => {
+      const val = errorsObj[key];
+      if (Array.isArray(val) && val.length > 0) {
+        fieldErrors[key] = val[0];
+      } else if (typeof val === 'string') {
+        fieldErrors[key] = val;
+      }
+    });
+
+    return fieldErrors;
+  };
+
   const extractErrorMessage = (err, defaultMsg) => {
     const responseData = err.response?.data;
     if (!responseData) return defaultMsg;
@@ -48,7 +68,7 @@ export const AuthProvider = ({ children }) => {
     if (firstKey) {
       const val = errorsObj[firstKey];
       const msg = Array.isArray(val) ? val[0] : val;
-      return firstKey === 'detail' ? msg : `${firstKey}: ${msg}`;
+      return msg;
     }
 
     return defaultMsg;
@@ -61,9 +81,13 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user);
       return data;
     } catch (err) {
+      const fieldErrors = extractFieldErrors(err);
       const errorMessage = extractErrorMessage(err, 'Invalid email or password.');
       setError(errorMessage);
-      throw new Error(errorMessage);
+      const customErr = new Error(errorMessage);
+      customErr.fieldErrors = fieldErrors;
+      customErr.response = err.response;
+      throw customErr;
     }
   };
 
@@ -74,9 +98,13 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user);
       return data;
     } catch (err) {
+      const fieldErrors = extractFieldErrors(err);
       const errorMessage = extractErrorMessage(err, 'Registration failed. Please check your inputs.');
       setError(errorMessage);
-      throw new Error(errorMessage);
+      const customErr = new Error(errorMessage);
+      customErr.fieldErrors = fieldErrors;
+      customErr.response = err.response;
+      throw customErr;
     }
   };
 

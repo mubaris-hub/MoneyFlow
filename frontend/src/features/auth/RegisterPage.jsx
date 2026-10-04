@@ -22,33 +22,44 @@ export const RegisterPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (error) setError('');
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirm_password) {
-      setError('Passwords do not match.');
+      const msg = 'Passwords do not match.';
+      setError(msg);
+      setFieldErrors({ confirm_password: msg });
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long.');
+      const msg = 'Password must be at least 8 characters long.';
+      setError(msg);
+      setFieldErrors({ password: msg });
       return;
     }
 
     setLoading(true);
     setError('');
+    setFieldErrors({});
 
     try {
       await register(formData);
       navigate('/dashboard', { replace: true });
     } catch (err) {
+      const fErrors = err.fieldErrors || {};
+      setFieldErrors(fErrors);
       setError(err.message || 'Registration failed. Please check your inputs.');
     } finally {
       setLoading(false);
@@ -88,6 +99,7 @@ export const RegisterPage = () => {
                 placeholder="Jane"
                 value={formData.first_name}
                 onChange={handleChange}
+                error={fieldErrors.first_name}
                 required
               />
               <Input
@@ -97,6 +109,7 @@ export const RegisterPage = () => {
                 placeholder="Doe"
                 value={formData.last_name}
                 onChange={handleChange}
+                error={fieldErrors.last_name}
               />
             </div>
 
@@ -108,6 +121,7 @@ export const RegisterPage = () => {
               icon={User}
               value={formData.username}
               onChange={handleChange}
+              error={fieldErrors.username}
               required
             />
 
@@ -119,6 +133,7 @@ export const RegisterPage = () => {
               icon={Mail}
               value={formData.email}
               onChange={handleChange}
+              error={fieldErrors.email}
               required
             />
 
@@ -130,6 +145,7 @@ export const RegisterPage = () => {
               icon={Lock}
               value={formData.password}
               onChange={handleChange}
+              error={fieldErrors.password}
               required
             />
 
@@ -141,6 +157,7 @@ export const RegisterPage = () => {
               icon={Lock}
               value={formData.confirm_password}
               onChange={handleChange}
+              error={fieldErrors.confirm_password}
               required
             />
 

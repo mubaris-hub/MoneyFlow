@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'apps.users.apps.UsersConfig',
     'apps.common.apps.CommonConfig',
     'apps.groups.apps.GroupsConfig',
+    'apps.expenses.apps.ExpensesConfig',
 ]
 
 MIDDLEWARE = [
@@ -154,3 +155,10 @@ DEFAULT_CORS_ORIGINS = 'http://localhost:5173,http://127.0.0.1:5173,http://192.1
 CORS_ALLOWED_ORIGINS_ENV = os.getenv('CORS_ALLOWED_ORIGINS', DEFAULT_CORS_ORIGINS)
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS_ENV.split(',') if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
+
+# Email & Password Reset Settings
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'MoneyFlow <noreply@moneyflow.local>')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+PASSWORD_RESET_TIMEOUT = int(os.getenv('PASSWORD_RESET_TIMEOUT', 86400))  # 24 hours in seconds
+

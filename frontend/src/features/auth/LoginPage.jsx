@@ -105,9 +105,9 @@ export const LoginPage = () => {
                 <span className="text-slate-600 font-medium">Remember me</span>
               </label>
 
-              <span className="text-slate-400 hover:text-slate-600 cursor-not-allowed font-medium" title="Phase 2 Feature">
+              <Link to="/forgot-password" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
                 Forgot password?
-              </span>
+              </Link>
             </div>
 
             <Button

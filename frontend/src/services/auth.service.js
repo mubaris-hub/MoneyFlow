@@ -57,6 +57,16 @@ export const authService = {
 
   isAuthenticated() {
     return !!localStorage.getItem('access_token');
+  },
+
+  async requestPasswordReset(email) {
+    const response = await api.post('/auth/password-reset/', { email });
+    return response.data;
+  },
+
+  async confirmPasswordReset(data) {
+    const response = await api.post('/auth/password-reset-confirm/', data);
+    return response.data;
   }
 };
 

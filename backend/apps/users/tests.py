@@ -86,3 +86,104 @@ class AuthAPITests(TestCase):
         response = self.client.get(self.me_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['user']['email'], 'jane@example.com')
+
+    def test_password_reset_request_generic_response_for_known_and_unknown_email(self):
+        self.client.post(self.register_url, self.user_data, format='json')
+        reset_url = reverse('password_reset_request')
+
+        # Known email
+        resp1 = self.client.post(reset_url, {"email": "jane@example.com"}, format='json')
+        self.assertEqual(resp1.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp1.data['message'], "If an account with that email exists, a password reset link has been sent.")
+
+        # Unknown email
+        resp2 = self.client.post(reset_url, {"email": "unknown@example.com"}, format='json')
+        self.assertEqual(resp2.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp2.data['message'], "If an account with that email exists, a password reset link has been sent.")
+
+    def test_password_reset_confirm_successful_flow(self):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+
+        self.client.post(self.register_url, self.user_data, format='json')
+        user = User.objects.get(email="jane@example.com")
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        confirm_url = reverse('password_reset_confirm')
+        confirm_data = {
+            "uid": uid,
+            "token": token,
+            "new_password": "NewStrongPassword123!",
+            "confirm_password": "NewStrongPassword123!"
+        }
+        response = self.client.post(confirm_url, confirm_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify old password no longer works
+        old_login = self.client.post(self.login_url, {"email": "jane@example.com", "password": "Password123!"}, format='json')
+        self.assertEqual(old_login.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Verify new password works
+        new_login = self.client.post(self.login_url, {"email": "jane@example.com", "password": "NewStrongPassword123!"}, format='json')
+        self.assertEqual(new_login.status_code, status.HTTP_200_OK)
+
+    def test_password_reset_confirm_invalid_token(self):
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+
+        self.client.post(self.register_url, self.user_data, format='json')
+        user = User.objects.get(email="jane@example.com")
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+        confirm_url = reverse('password_reset_confirm')
+        confirm_data = {
+            "uid": uid,
+            "token": "invalid-token-123",
+            "new_password": "NewStrongPassword123!",
+            "confirm_password": "NewStrongPassword123!"
+        }
+        response = self.client.post(confirm_url, confirm_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_password_reset_confirm_password_mismatch(self):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+
+        self.client.post(self.register_url, self.user_data, format='json')
+        user = User.objects.get(email="jane@example.com")
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        confirm_url = reverse('password_reset_confirm')
+        confirm_data = {
+            "uid": uid,
+            "token": token,
+            "new_password": "NewStrongPassword123!",
+            "confirm_password": "DifferentPassword123!"
+        }
+        response = self.client.post(confirm_url, confirm_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_password_reset_confirm_weak_password(self):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+
+        self.client.post(self.register_url, self.user_data, format='json')
+        user = User.objects.get(email="jane@example.com")
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        confirm_url = reverse('password_reset_confirm')
+        confirm_data = {
+            "uid": uid,
+            "token": token,
+            "new_password": "password",
+            "confirm_password": "password"
+        }
+        response = self.client.post(confirm_url, confirm_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+

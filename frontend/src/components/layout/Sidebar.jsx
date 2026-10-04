@@ -20,8 +20,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const navItems = [
     { name: 'Overview', path: '/dashboard', icon: LayoutDashboard, isReal: true },
     { name: 'Groups', path: '/groups', icon: Users, isReal: true },
+    { name: 'Expenses', path: '/expenses', icon: Receipt, isReal: true },
     { name: 'Transactions', path: '#', icon: ArrowRightLeft, isReal: false, badge: 'Soon' },
-    { name: 'Expenses', path: '#', icon: Receipt, isReal: false, badge: 'Soon' },
     { name: 'Settlements', path: '#', icon: HandCoins, isReal: false, badge: 'Soon' },
     { name: 'Reports', path: '#', icon: BarChart3, isReal: false, badge: 'Soon' },
     { name: 'Settings', path: '#', icon: Settings, isReal: false, badge: 'Soon' },

@@ -6,7 +6,9 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import InviteMemberModal from './InviteMemberModal';
-import { getInitials } from '../../utils/formatters';
+import CreateExpenseModal from '../expenses/CreateExpenseModal';
+import expenseService from '../../services/expense.service';
+import { getInitials, formatINR } from '../../utils/formatters';
 import {
   Users,
   UserPlus,
@@ -19,7 +21,7 @@ import {
   Wallet,
   Loader2,
   AlertCircle,
-  Settings
+  Plus
 } from 'lucide-react';
 
 export const GroupDetailPage = () => {
@@ -32,8 +34,30 @@ export const GroupDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isCreateExpenseModalOpen, setIsCreateExpenseModalOpen] = useState(false);
+  const [groupExpenses, setGroupExpenses] = useState([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('members'); // 'members', 'balances', 'expenses'
+
+  const fetchGroupExpenses = useCallback(async () => {
+    if (!groupId) return;
+    try {
+      setLoadingExpenses(true);
+      const data = await expenseService.getExpenses({ group_id: groupId });
+      setGroupExpenses(data);
+    } catch (err) {
+      console.error('Failed to load group expenses:', err);
+    } finally {
+      setLoadingExpenses(false);
+    }
+  }, [groupId]);
+
+  useEffect(() => {
+    if (activeTab === 'expenses') {
+      fetchGroupExpenses();
+    }
+  }, [activeTab, fetchGroupExpenses]);
 
   const fetchGroupDetails = useCallback(async () => {
     try {
@@ -264,17 +288,67 @@ export const GroupDetailPage = () => {
       )}
 
       {activeTab === 'expenses' && (
-        <Card className="py-12 text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mx-auto">
-            <Receipt className="w-6 h-6" />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900">Expenses Logged ({groupExpenses.length})</h3>
+            <Button variant="primary" size="sm" onClick={() => setIsCreateExpenseModalOpen(true)}>
+              <Plus className="w-4 h-4 mr-1.5" /> Log Expense
+            </Button>
           </div>
-          <div className="max-w-sm mx-auto space-y-1">
-            <h3 className="text-sm font-bold text-slate-900">Group Expenses Feed</h3>
-            <p className="text-xs text-slate-500">
-              Multi-type expense splitting (Equal, Exact, %, Shares) will be activated in Phase 3.
-            </p>
-          </div>
-        </Card>
+
+          {loadingExpenses ? (
+            <div className="py-12 flex flex-col items-center justify-center space-y-3">
+              <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+              <p className="text-xs text-slate-500">Loading group expenses...</p>
+            </div>
+          ) : groupExpenses.length === 0 ? (
+            <Card className="py-12 text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mx-auto">
+                <Receipt className="w-6 h-6" />
+              </div>
+              <div className="max-w-sm mx-auto space-y-1">
+                <h3 className="text-sm font-bold text-slate-900">No expenses in this group yet</h3>
+                <p className="text-xs text-slate-500">
+                  Log an expense to split costs automatically across group members.
+                </p>
+              </div>
+              <Button variant="primary" size="sm" onClick={() => setIsCreateExpenseModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-1.5" /> Log First Expense
+              </Button>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {groupExpenses.map((expense) => {
+                const isPayer = expense.paid_by?.id === user?.id;
+
+                return (
+                  <Card key={expense.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3 shadow-2xs">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0 border border-emerald-100">
+                          <Receipt className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h4 className="text-sm font-bold text-slate-900">{expense.description}</h4>
+                            <Badge variant="neutral">{expense.category?.name || 'General'}</Badge>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Paid by <strong>{isPayer ? 'You' : expense.paid_by?.first_name}</strong> on {expense.date} • <span className="text-emerald-700 font-medium">{expense.split_type}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-base font-extrabold text-slate-900">{formatINR(expense.total_amount)}</p>
+                        <p className="text-xs text-slate-500">Your share: <strong>{formatINR(expense.my_share)}</strong></p>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Invite Member Modal */}
@@ -283,6 +357,17 @@ export const GroupDetailPage = () => {
         onClose={() => setIsInviteModalOpen(false)}
         group={group}
         onMemberAdded={fetchGroupDetails}
+      />
+
+      {/* Create Expense Modal */}
+      <CreateExpenseModal
+        isOpen={isCreateExpenseModalOpen}
+        onClose={() => setIsCreateExpenseModalOpen(false)}
+        initialGroupId={groupId}
+        onExpenseCreated={() => {
+          fetchGroupExpenses();
+          fetchGroupDetails();
+        }}
       />
     </div>
   );

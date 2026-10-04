@@ -6,6 +6,8 @@ import AppLayout from './components/layout/AppLayout';
 import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
 import DashboardPage from './features/dashboard/DashboardPage';
+import GroupListPage from './features/groups/GroupListPage';
+import GroupDetailPage from './features/groups/GroupDetailPage';
 
 export const App = () => {
   return (
@@ -27,6 +29,8 @@ export const App = () => {
           >
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="groups" element={<GroupListPage />} />
+            <Route path="groups/:groupId" element={<GroupDetailPage />} />
           </Route>
 
           {/* Fallback Catch-all Route */}

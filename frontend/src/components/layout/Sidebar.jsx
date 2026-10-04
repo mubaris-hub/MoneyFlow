@@ -18,13 +18,13 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
 
   const navItems = [
-    { name: 'Overview', path: '/dashboard', icon: LayoutDashboard, active: true },
-    { name: 'Transactions', path: '#', icon: ArrowRightLeft, active: false, badge: 'Soon' },
-    { name: 'Friends', path: '#', icon: Users, active: false, badge: 'Soon' },
-    { name: 'Expenses', path: '#', icon: Receipt, active: false, badge: 'Soon' },
-    { name: 'Settlements', path: '#', icon: HandCoins, active: false, badge: 'Soon' },
-    { name: 'Reports', path: '#', icon: BarChart3, active: false, badge: 'Soon' },
-    { name: 'Settings', path: '#', icon: Settings, active: false, badge: 'Soon' },
+    { name: 'Overview', path: '/dashboard', icon: LayoutDashboard, isReal: true },
+    { name: 'Groups', path: '/groups', icon: Users, isReal: true },
+    { name: 'Transactions', path: '#', icon: ArrowRightLeft, isReal: false, badge: 'Soon' },
+    { name: 'Expenses', path: '#', icon: Receipt, isReal: false, badge: 'Soon' },
+    { name: 'Settlements', path: '#', icon: HandCoins, isReal: false, badge: 'Soon' },
+    { name: 'Reports', path: '#', icon: BarChart3, isReal: false, badge: 'Soon' },
+    { name: 'Settings', path: '#', icon: Settings, isReal: false, badge: 'Soon' },
   ];
 
   return (
@@ -58,9 +58,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
           <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Main Menu</p>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isDashboard = item.path === '/dashboard';
 
-            return isDashboard ? (
+            return item.isReal ? (
               <NavLink
                 key={item.name}
                 to={item.path}
@@ -82,7 +81,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
               <div
                 key={item.name}
                 className="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-500 cursor-not-allowed hover:bg-slate-800/30"
-                title="Available in Phase 2+"
+                title="Available in Phase 3+"
               >
                 <div className="flex items-center space-x-3">
                   <Icon className="w-4 h-4 text-slate-500" />

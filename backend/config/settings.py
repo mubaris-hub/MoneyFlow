@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # Local apps
     'apps.users.apps.UsersConfig',
     'apps.common.apps.CommonConfig',
+    'apps.groups.apps.GroupsConfig',
 ]
 
 MIDDLEWARE = [

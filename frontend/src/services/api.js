@@ -1,6 +1,19 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://192.168.20.7:8000/api/v1';
+
+const PUBLIC_ENDPOINTS = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/password-reset',
+  '/auth/password-reset-confirm',
+  '/auth/token/refresh',
+];
+
+const isPublicEndpoint = (url) => {
+  if (!url) return false;
+  return PUBLIC_ENDPOINTS.some((endpoint) => url.includes(endpoint));
+};
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,12 +22,14 @@ const api = axios.create({
   },
 });
 
-// Request Interceptor: Attach JWT Access Token
+// Request Interceptor: Attach JWT Access Token only to non-public endpoints
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (!isPublicEndpoint(config.url)) {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -43,8 +58,8 @@ api.interceptors.response.use(
 
     // Check if error is 401 and request hasn't been retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Avoid infinite loops for login/register endpoints
-      if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register')) {
+      // Do not attempt token refresh for public authentication endpoints
+      if (isPublicEndpoint(originalRequest.url)) {
         return Promise.reject(error);
       }
 

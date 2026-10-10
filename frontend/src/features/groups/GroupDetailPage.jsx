@@ -5,7 +5,9 @@ import useAuth from '../../hooks/useAuth';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
+import GroupBalancesTab from './GroupBalancesTab';
 import InviteMemberModal from './InviteMemberModal';
+
 import CreateExpenseModal from '../expenses/CreateExpenseModal';
 import expenseService from '../../services/expense.service';
 import { getInitials, formatINR } from '../../utils/formatters';
@@ -274,18 +276,13 @@ export const GroupDetailPage = () => {
       )}
 
       {activeTab === 'balances' && (
-        <Card className="py-12 text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
-            <Wallet className="w-6 h-6" />
-          </div>
-          <div className="max-w-sm mx-auto space-y-1">
-            <h3 className="text-sm font-bold text-slate-900">Group Balances</h3>
-            <p className="text-xs text-slate-500">
-              Net pairwise debts and "Settle Up" calculations will be activated in Phase 4.
-            </p>
-          </div>
-        </Card>
+        <GroupBalancesTab
+          groupId={groupId}
+          members={members}
+          currentUserId={user?.id}
+        />
       )}
+
 
       {activeTab === 'expenses' && (
         <div className="space-y-4">

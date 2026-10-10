@@ -1,0 +1,1 @@
+# Money Accounts domain package

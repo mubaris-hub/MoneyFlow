@@ -94,3 +94,36 @@ class DirectPayment(models.Model):
 
     def __str__(self):
         return f"{self.sender.username} -> {self.receiver.username}: ₹{self.amount}"
+
+
+class Settlement(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Confirmation'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='settlements')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_settlements')
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_settlements')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default='INR')
+    date = models.DateField(default=timezone.now)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='COMPLETED')
+    notes = models.TextField(blank=True, default='')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_settlements')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'expenses_settlement'
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['group', 'status']),
+            models.Index(fields=['sender', 'receiver']),
+        ]
+
+    def __str__(self):
+        return f"{self.sender.username} -> {self.receiver.username}: ₹{self.amount} ({self.status})"
+

@@ -50,6 +50,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const extractErrorMessage = (err, defaultMsg) => {
+    if (err.message === 'Network Error' || !err.response) {
+      return 'Network Error: Cannot connect to MoneyFlow API server. Please check your network connection.';
+    }
+
     const responseData = err.response?.data;
     if (!responseData) return defaultMsg;
 

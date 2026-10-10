@@ -1,4 +1,6 @@
+from decimal import Decimal
 from rest_framework import serializers
+
 from django.db import transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -196,3 +198,74 @@ class DirectPaymentSerializer(serializers.ModelSerializer):
             date=validated_data.get('date'),
             notes=validated_data.get('notes', '')
         )
+
+
+class SettlementSerializer(serializers.ModelSerializer):
+    sender = UserSerializer(read_only=True)
+    receiver = UserSerializer(read_only=True)
+    created_by = UserSerializer(read_only=True)
+
+    class Meta:
+        from .models import Settlement
+        model = Settlement
+        fields = [
+            'id', 'group', 'sender', 'receiver', 'amount',
+            'currency', 'date', 'status', 'notes',
+            'created_by', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'group', 'created_by', 'created_at', 'updated_at']
+
+
+class CreateSettlementSerializer(serializers.ModelSerializer):
+    sender_id = serializers.UUIDField(required=True, write_only=True)
+    receiver_id = serializers.UUIDField(required=True, write_only=True)
+
+    class Meta:
+        from .models import Settlement
+        model = Settlement
+        fields = ['id', 'sender_id', 'receiver_id', 'amount', 'currency', 'date', 'status', 'notes']
+
+    def validate(self, attrs):
+        from .models import Settlement
+        request_user = self.context['request'].user
+        group = self.context['group']
+        sender_id = attrs['sender_id']
+        receiver_id = attrs['receiver_id']
+
+        if attrs['amount'] <= Decimal('0.00'):
+            raise serializers.ValidationError({"amount": "Settlement amount must be greater than zero."})
+
+        if str(sender_id) == str(receiver_id):
+            raise serializers.ValidationError({"receiver_id": "Sender and receiver cannot be the same user."})
+
+        sender = User.objects.filter(id=sender_id).first()
+        if not sender or not GroupMember.objects.filter(group=group, user=sender).exists():
+            raise serializers.ValidationError({"sender_id": "Sender must be an active member of the group."})
+
+        receiver = User.objects.filter(id=receiver_id).first()
+        if not receiver or not GroupMember.objects.filter(group=group, user=receiver).exists():
+            raise serializers.ValidationError({"receiver_id": "Receiver must be an active member of the group."})
+
+        attrs['validated_sender'] = sender
+        attrs['validated_receiver'] = receiver
+        return attrs
+
+    def create(self, validated_data):
+        from .models import Settlement
+        request_user = self.context['request'].user
+        group = self.context['group']
+        date_val = validated_data.get('date') or timezone.now().date()
+        status_val = validated_data.get('status', 'COMPLETED')
+
+        return Settlement.objects.create(
+            group=group,
+            sender=validated_data['validated_sender'],
+            receiver=validated_data['validated_receiver'],
+            amount=validated_data['amount'],
+            currency=validated_data.get('currency', 'INR'),
+            date=date_val,
+            status=status_val,
+            notes=validated_data.get('notes', ''),
+            created_by=request_user
+        )
+

@@ -3,6 +3,8 @@ import useAuth from '../../hooks/useAuth';
 import { getInitials } from '../../utils/formatters';
 import { Search, Bell, Menu } from 'lucide-react';
 
+import NotificationDropdown from '../notifications/NotificationDropdown';
+
 export const Header = ({ onMenuClick }) => {
   const { user } = useAuth();
 
@@ -33,14 +35,8 @@ export const Header = ({ onMenuClick }) => {
           />
         </div>
 
-        {/* Notifications Icon */}
-        <button
-          className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg relative transition-colors"
-          title="Notifications (Phase 2+)"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full" />
-        </button>
+        {/* Notifications Icon Component */}
+        <NotificationDropdown />
 
         {/* User Avatar */}
         <div className="flex items-center space-x-2 pl-2 border-l border-slate-200">

@@ -26,7 +26,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS_ENV = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.20.7')
+ALLOWED_HOSTS_ENV = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.20.7,192.168.20.2')
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',') if host.strip()]
 
 # Custom User Model
@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'apps.common.apps.CommonConfig',
     'apps.groups.apps.GroupsConfig',
     'apps.expenses.apps.ExpensesConfig',
+    'apps.money_accounts.apps.MoneyAccountsConfig',
+    'apps.notifications.apps.NotificationsConfig',
 ]
 
 MIDDLEWARE = [
@@ -123,6 +125,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Media files (Uploaded Receipts)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -151,7 +157,7 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-DEFAULT_CORS_ORIGINS = 'http://localhost:5173,http://127.0.0.1:5173,http://192.168.20.7:5173'
+DEFAULT_CORS_ORIGINS = 'http://localhost:5173,http://127.0.0.1:5173,http://192.168.20.7:5173,http://192.168.20.2:5173,http://localhost:5174,http://127.0.0.1:5174,http://192.168.20.7:5174,http://192.168.20.2:5174'
 CORS_ALLOWED_ORIGINS_ENV = os.getenv('CORS_ALLOWED_ORIGINS', DEFAULT_CORS_ORIGINS)
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS_ENV.split(',') if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True

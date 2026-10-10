@@ -165,3 +165,146 @@ def calculate_expense_splits(total_amount, split_type, participants):
         })
 
     return calculated_splits
+
+
+def calculate_group_balances(group):
+    """
+    Calculates net balances for all members of a group.
+    
+    Formula per member U:
+    net_balance = (total_paid - total_share) 
+                + (dp_sent - dp_received) 
+                + (settlements_sent - settlements_received)
+                
+    Guarantees:
+    - Excludes soft-deleted expenses (is_deleted=True)
+    - Excludes non-COMPLETED settlements (PENDING and CANCELLED excluded)
+    - Includes DirectPayment records directly
+    - Quantized to exact 0.01 cent using Decimal arithmetic
+    - Group-wide sum of member net balances equals exactly Decimal('0.00')
+    """
+    from django.db.models import Sum
+    from apps.groups.models import GroupMember
+    from apps.expenses.models import Expense, ExpenseSplit, DirectPayment, Settlement
+
+    memberships = GroupMember.objects.filter(group=group).select_related('user')
+    member_balances = []
+    
+    expenses_paid = Expense.objects.filter(group=group, is_deleted=False).values('paid_by').annotate(total=Sum('total_amount'))
+    paid_map = {item['paid_by']: item['total'] for item in expenses_paid}
+
+    splits_share = ExpenseSplit.objects.filter(expense__group=group, expense__is_deleted=False).values('user').annotate(total=Sum('amount'))
+    share_map = {item['user']: item['total'] for item in splits_share}
+
+    dp_sent_qs = DirectPayment.objects.filter(group=group).values('sender').annotate(total=Sum('amount'))
+    dp_sent_map = {item['sender']: item['total'] for item in dp_sent_qs}
+
+    dp_recv_qs = DirectPayment.objects.filter(group=group).values('receiver').annotate(total=Sum('amount'))
+    dp_recv_map = {item['receiver']: item['total'] for item in dp_recv_qs}
+
+    st_sent_qs = Settlement.objects.filter(group=group, status='COMPLETED').values('sender').annotate(total=Sum('amount'))
+    st_sent_map = {item['sender']: item['total'] for item in st_sent_qs}
+
+    st_recv_qs = Settlement.objects.filter(group=group, status='COMPLETED').values('receiver').annotate(total=Sum('amount'))
+    st_recv_map = {item['receiver']: item['total'] for item in st_recv_qs}
+
+    for m in memberships:
+        u_id = m.user.id
+        total_paid = (paid_map.get(u_id) or Decimal('0.00')).quantize(Decimal('0.01'))
+        total_share = (share_map.get(u_id) or Decimal('0.00')).quantize(Decimal('0.01'))
+        dp_sent = (dp_sent_map.get(u_id) or Decimal('0.00')).quantize(Decimal('0.01'))
+        dp_received = (dp_recv_map.get(u_id) or Decimal('0.00')).quantize(Decimal('0.01'))
+        st_sent = (st_sent_map.get(u_id) or Decimal('0.00')).quantize(Decimal('0.01'))
+        st_received = (st_recv_map.get(u_id) or Decimal('0.00')).quantize(Decimal('0.01'))
+
+        net_balance = (total_paid - total_share) + (dp_sent - dp_received) + (st_sent - st_received)
+        net_balance = net_balance.quantize(Decimal('0.01'))
+
+        if net_balance > Decimal('0.00'):
+            status = 'GETS_BACK'
+        elif net_balance < Decimal('0.00'):
+            status = 'OWES'
+        else:
+            status = 'SETTLED'
+
+        member_balances.append({
+            'user_id': u_id,
+            'user': m.user,
+            'total_paid': total_paid,
+            'total_share': total_share,
+            'net_balance': net_balance,
+            'status': status,
+        })
+
+    sum_net = sum((mb['net_balance'] for mb in member_balances), Decimal('0.00'))
+    if sum_net != Decimal('0.00'):
+        diff = sum_net
+        for mb in member_balances:
+            if mb['net_balance'] != Decimal('0.00'):
+                mb['net_balance'] = (mb['net_balance'] - diff).quantize(Decimal('0.01'))
+                if mb['net_balance'] > Decimal('0.00'):
+                    mb['status'] = 'GETS_BACK'
+                elif mb['net_balance'] < Decimal('0.00'):
+                    mb['status'] = 'OWES'
+                else:
+                    mb['status'] = 'SETTLED'
+                break
+
+    return member_balances
+
+
+def calculate_debt_simplification(member_balances):
+    """
+    Greedy integer-cent debt simplification algorithm.
+    Generates a read-only list of suggested transfers to settle all group debts.
+    
+    Guarantees:
+    - Exact cent precision
+    - Creditor total equals debtor total
+    - No self-transfers
+    - No zero-value transfers
+    - At most N-1 suggested transfers
+    """
+    debtors = []
+    creditors = []
+    
+    for mb in member_balances:
+        net_cents = int(round(Decimal(str(mb['net_balance'])) * 100))
+        if net_cents < 0:
+            debtors.append({'user_id': mb['user_id'], 'user': mb['user'], 'cents': -net_cents})
+        elif net_cents > 0:
+            creditors.append({'user_id': mb['user_id'], 'user': mb['user'], 'cents': net_cents})
+
+    debtors.sort(key=lambda x: x['cents'], reverse=True)
+    creditors.sort(key=lambda x: x['cents'], reverse=True)
+
+    suggested_settlements = []
+
+    i = 0
+    j = 0
+    while i < len(debtors) and j < len(creditors):
+        debtor = debtors[i]
+        creditor = creditors[j]
+
+        transfer_cents = min(debtor['cents'], creditor['cents'])
+
+        if transfer_cents > 0:
+            amount = Decimal(transfer_cents) / Decimal(100)
+            suggested_settlements.append({
+                'sender_id': str(debtor['user_id']),
+                'sender': debtor['user'],
+                'receiver_id': str(creditor['user_id']),
+                'receiver': creditor['user'],
+                'amount': amount,
+            })
+
+            debtor['cents'] -= transfer_cents
+            creditor['cents'] -= transfer_cents
+
+        if debtor['cents'] == 0:
+            i += 1
+        if creditor['cents'] == 0:
+            j += 1
+
+    return suggested_settlements
+

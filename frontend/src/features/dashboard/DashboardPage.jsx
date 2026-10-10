@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
+import groupService from '../../services/group.service';
+import expenseService from '../../services/expense.service';
+import settlementService from '../../services/settlement.service';
 import StatCard from '../../components/common/StatCard';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import CreateGroupModal from '../groups/CreateGroupModal';
+import { formatINR } from '../../utils/formatters';
 import {
   Wallet,
   ArrowDownLeft,
@@ -12,7 +16,6 @@ import {
   HandCoins,
   Sparkles,
   Users,
-  Plus,
   ArrowUpRight
 } from 'lucide-react';
 
@@ -20,6 +23,97 @@ export const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const [stats, setStats] = useState({
+    netBalance: 0,
+    moneyReceived: 0,
+    receivedCount: 0,
+    totalExpensesShare: 0,
+    expensesCount: 0,
+    pendingSettlementsAmount: 0,
+    pendingSettlementsCount: 0,
+    loading: true,
+  });
+
+  const fetchDashboardStats = useCallback(async () => {
+    try {
+      setStats((prev) => ({ ...prev, loading: true }));
+      const [groups, expenses, directPayments] = await Promise.all([
+        groupService.getGroups().catch(() => []),
+        expenseService.getExpenses().catch(() => []),
+        expenseService.getDirectPayments().catch(() => []),
+      ]);
+
+      let netBalanceSum = 0;
+      let pendingSum = 0;
+      let pendingCount = 0;
+
+      if (groups && groups.length > 0) {
+        const groupDetails = await Promise.all(
+          groups.map(async (g) => {
+            try {
+              const [summary, settlements] = await Promise.all([
+                settlementService.getGroupBalancesSummary(g.id).catch(() => null),
+                settlementService.getGroupSettlements(g.id, { status: 'PENDING' }).catch(() => []),
+              ]);
+              return { summary, settlements };
+            } catch {
+              return { summary: null, settlements: [] };
+            }
+          })
+        );
+
+        groupDetails.forEach(({ summary, settlements }) => {
+          if (summary?.my_balance?.net_balance) {
+            netBalanceSum += parseFloat(summary.my_balance.net_balance) || 0;
+          }
+          if (settlements && Array.isArray(settlements)) {
+            settlements.forEach((s) => {
+              if (s.status === 'PENDING') {
+                pendingSum += parseFloat(s.amount) || 0;
+                pendingCount += 1;
+              }
+            });
+          }
+        });
+      }
+
+      let receivedSum = 0;
+      let receivedCount = 0;
+      if (directPayments && Array.isArray(directPayments)) {
+        directPayments.forEach((dp) => {
+          if (user?.id && String(dp.receiver?.id) === String(user.id)) {
+            receivedSum += parseFloat(dp.amount) || 0;
+            receivedCount += 1;
+          }
+        });
+      }
+
+      let expenseShareSum = 0;
+      const expenseList = Array.isArray(expenses) ? expenses : [];
+      expenseList.forEach((e) => {
+        expenseShareSum += parseFloat(e.my_share) || 0;
+      });
+
+      setStats({
+        netBalance: netBalanceSum,
+        moneyReceived: receivedSum,
+        receivedCount,
+        totalExpensesShare: expenseShareSum,
+        expensesCount: expenseList.length,
+        pendingSettlementsAmount: pendingSum,
+        pendingSettlementsCount: pendingCount,
+        loading: false,
+      });
+    } catch (err) {
+      console.error('Failed to load dashboard stats:', err);
+      setStats((prev) => ({ ...prev, loading: false }));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, [fetchDashboardStats]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -36,7 +130,7 @@ export const DashboardPage = () => {
           <div className="space-y-1.5">
             <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-medium text-emerald-100 mb-1">
               <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Phase 2 Active Engine</span>
+              <span>Phase 4 Active</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               {getGreeting()}, {user?.first_name || 'Friend'} 👋
@@ -67,52 +161,57 @@ export const DashboardPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <StatCard
           title="Available Balance"
-          value="₹0"
+          value={formatINR(stats.netBalance)}
           subtitle="Net balance across all groups"
           icon={Wallet}
           iconBg="bg-emerald-100 text-emerald-700"
           trend={
-            <span className="inline-flex items-center text-slate-500">
-              <ArrowUpRight className="w-3.5 h-3.5 mr-1 text-slate-400" /> Fully settled up
+            <span className={`inline-flex items-center ${stats.netBalance > 0 ? 'text-emerald-600 font-semibold' : stats.netBalance < 0 ? 'text-rose-600 font-semibold' : 'text-slate-500'}`}>
+              <ArrowUpRight className="w-3.5 h-3.5 mr-1 text-slate-400" />
+              {stats.netBalance > 0
+                ? `Gets back ${formatINR(stats.netBalance)}`
+                : stats.netBalance < 0
+                ? `Owes ${formatINR(Math.abs(stats.netBalance))}`
+                : 'Fully settled up'}
             </span>
           }
         />
 
         <StatCard
           title="Money Received"
-          value="₹0"
+          value={formatINR(stats.moneyReceived)}
           subtitle="Total repayments received"
           icon={ArrowDownLeft}
           iconBg="bg-teal-100 text-teal-700"
           trend={
             <span className="inline-flex items-center text-slate-500">
-              0 direct transfers
+              {stats.receivedCount} direct transfers
             </span>
           }
         />
 
         <StatCard
           title="Total Expenses"
-          value="₹0"
+          value={formatINR(stats.totalExpensesShare)}
           subtitle="Your total shared share"
           icon={Receipt}
           iconBg="bg-sky-100 text-sky-700"
           trend={
             <span className="inline-flex items-center text-slate-500">
-              0 active expenses
+              {stats.expensesCount} active expenses
             </span>
           }
         />
 
         <StatCard
           title="Pending Settlements"
-          value="₹0"
+          value={formatINR(stats.pendingSettlementsAmount)}
           subtitle="Settlements to be cleared"
           icon={HandCoins}
           iconBg="bg-amber-100 text-amber-700"
           trend={
             <span className="inline-flex items-center text-slate-500">
-              0 pending requests
+              {stats.pendingSettlementsCount} pending requests
             </span>
           }
         />
@@ -126,7 +225,7 @@ export const DashboardPage = () => {
               <h3 className="text-base font-bold text-slate-900">Recent Activity</h3>
               <p className="text-xs text-slate-500">Groups and shared expenses feed</p>
             </div>
-            <Badge variant="brand">Phase 2 Enabled</Badge>
+            <Badge variant="brand">Phase 4 Active</Badge>
           </div>
 
           <div className="py-10 text-center space-y-3">
@@ -134,9 +233,9 @@ export const DashboardPage = () => {
               <Users className="w-6 h-6" />
             </div>
             <div className="max-w-sm mx-auto space-y-2">
-              <p className="text-sm font-semibold text-slate-800">Group Management is active!</p>
+              <p className="text-sm font-semibold text-slate-800">Group & Settlement Engine is active!</p>
               <p className="text-xs text-slate-500">
-                You can now create groups, invite friends via unique codes, and manage memberships. Multi-person expense logging arrives in Phase 3.
+                You can create groups, log expenses with exact/equal/percentage splits, track member balances, and settle debts cleanly.
               </p>
               <div className="pt-2">
                 <Link to="/groups">

@@ -26,3 +26,16 @@ export const getInitials = (firstName = '', lastName = '') => {
   const last = lastName ? lastName.charAt(0).toUpperCase() : '';
   return `${first}${last}` || 'U';
 };
+
+export const formatDate = (dateString) => {
+  if (!dateString) return '-';
+  try {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch (e) {
+    return dateString;
+  }
+};

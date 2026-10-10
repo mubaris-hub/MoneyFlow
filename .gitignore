@@ -43,3 +43,6 @@ dist-ssr/
 .DS_Store
 Thumbs.db
 *.log
+backend/media/
+scratch/
+

@@ -11,7 +11,8 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Wallet
+  Wallet,
+  BookOpen
 } from 'lucide-react';
 
 export const Sidebar = ({ isOpen, onClose }) => {
@@ -21,11 +22,13 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Overview', path: '/dashboard', icon: LayoutDashboard, isReal: true },
     { name: 'Groups', path: '/groups', icon: Users, isReal: true },
     { name: 'Expenses', path: '/expenses', icon: Receipt, isReal: true },
+    { name: 'Friend Ledgers', path: '/money-accounts', icon: BookOpen, isReal: true },
     { name: 'Transactions', path: '#', icon: ArrowRightLeft, isReal: false, badge: 'Soon' },
-    { name: 'Settlements', path: '#', icon: HandCoins, isReal: false, badge: 'Soon' },
-    { name: 'Reports', path: '#', icon: BarChart3, isReal: false, badge: 'Soon' },
+    { name: 'Settlements', path: '/groups', icon: HandCoins, isReal: true },
+    { name: 'Reports', path: '/reports', icon: BarChart3, isReal: true },
     { name: 'Settings', path: '#', icon: Settings, isReal: false, badge: 'Soon' },
   ];
+
 
   return (
     <>

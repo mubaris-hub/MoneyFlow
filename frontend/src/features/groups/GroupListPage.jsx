@@ -89,8 +89,8 @@ export const GroupListPage = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Your Groups</h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Your Groups</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Track expenses and settle debts with roommates, trips, and friends.
           </p>
         </div>
@@ -106,15 +106,15 @@ export const GroupListPage = () => {
       </div>
 
       {/* Quick Join via Code Bar */}
-      <Card className="p-4 bg-slate-900 text-white border-0 shadow-md">
+      <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <form onSubmit={handleJoinByCode} className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-3 w-full sm:w-auto">
-            <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
+            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
               <Key className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Have an Invite Code?</p>
-              <p className="text-xs text-slate-400">Enter code to join an existing group instantly.</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">Have an Invite Code?</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Enter code to join an existing group instantly.</p>
             </div>
           </div>
 
@@ -127,7 +127,7 @@ export const GroupListPage = () => {
                 setJoinCode(e.target.value.toUpperCase());
                 if (joinError) setJoinError('');
               }}
-              className="px-3.5 py-2 text-xs font-mono font-bold bg-slate-800 border border-slate-700 text-white rounded-lg focus:outline-none focus:border-emerald-500 uppercase placeholder:normal-case placeholder:font-normal"
+              className="px-3.5 py-2 text-xs font-mono font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:outline-hidden focus:border-emerald-500 uppercase placeholder:normal-case placeholder:font-normal"
             />
             <Button type="submit" variant="primary" size="md" isLoading={joinLoading}>
               Join
@@ -145,12 +145,12 @@ export const GroupListPage = () => {
       {/* Groups List Grid */}
       {groups.length === 0 ? (
         <Card className="py-16 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+          <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
             <Users className="w-8 h-8" />
           </div>
           <div className="max-w-md mx-auto space-y-1">
-            <h3 className="text-base font-bold text-slate-900">No groups yet</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">No groups yet</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Create a group for your apartment, trip, or event to start logging shared expenses.
             </p>
           </div>
@@ -170,10 +170,10 @@ export const GroupListPage = () => {
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <h3 className="text-base font-bold text-slate-900 hover:text-emerald-600 transition-colors">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
                       {group.name}
                     </h3>
-                    <p className="text-xs text-slate-500 line-clamp-2">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
                       {group.description || 'No description added.'}
                     </p>
                   </div>
@@ -181,26 +181,26 @@ export const GroupListPage = () => {
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 {/* Member Avatars Stack */}
                 <div className="flex items-center space-x-2">
                   <div className="flex -space-x-2 overflow-hidden">
                     {group.members?.slice(0, 3).map((m) => (
                       <div
                         key={m.id}
-                        className="w-7 h-7 rounded-full bg-slate-200 border-2 border-white text-slate-700 flex items-center justify-center text-[10px] font-bold"
+                        className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[10px] font-bold"
                         title={`${m.user.first_name} ${m.user.last_name}`}
                       >
                         {getInitials(m.user.first_name, m.user.last_name)}
                       </div>
                     ))}
                   </div>
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
                     {group.members_count} {group.members_count === 1 ? 'member' : 'members'}
                   </span>
                 </div>
 
-                <div className="flex items-center text-xs font-semibold text-emerald-600 group-hover:translate-x-0.5 transition-transform">
+                <div className="flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform">
                   View <ArrowRight className="w-3.5 h-3.5 ml-1" />
                 </div>
               </div>

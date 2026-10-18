@@ -73,18 +73,18 @@ export const ReceiptModal = ({ isOpen, onClose, accountId, transaction, isManage
         )}
 
         {/* Transaction Header Summary */}
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs space-y-1">
           <div className="flex justify-between items-center">
-            <span className="font-bold text-slate-800">{transaction.description}</span>
-            <span className="font-extrabold text-slate-900 text-sm">{formatCurrency(transaction.amount)}</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">{transaction.description}</span>
+            <span className="font-extrabold text-slate-900 dark:text-white text-sm">{formatCurrency(transaction.amount)}</span>
           </div>
-          <p className="text-slate-500">
+          <p className="text-slate-500 dark:text-slate-400">
             Date: {formatDate(transaction.date)} | Type: {transaction.transaction_type}
           </p>
         </div>
 
         {/* Receipt Image Display */}
-        <div className="relative border border-slate-200 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center min-h-[250px] max-h-[450px]">
+        <div className="relative border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center min-h-[250px] max-h-[450px]">
           {receiptUrl ? (
             <img
               src={receiptUrl}
@@ -99,13 +99,13 @@ export const ReceiptModal = ({ isOpen, onClose, accountId, transaction, isManage
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
           {receiptUrl && (
             <a
               href={receiptUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center text-xs font-semibold text-emerald-600 hover:text-emerald-700"
+              className="inline-flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700"
             >
               <Download className="w-4 h-4 mr-1" />
               Open Full Image
@@ -116,7 +116,7 @@ export const ReceiptModal = ({ isOpen, onClose, accountId, transaction, isManage
             {isManager && !transaction.is_voided && (
               <>
                 <label className="cursor-pointer">
-                  <span className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
+                  <span className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
                     <Upload className="w-3.5 h-3.5 mr-1" />
                     Replace Receipt
                   </span>

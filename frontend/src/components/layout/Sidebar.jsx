@@ -23,10 +23,10 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Groups', path: '/groups', icon: Users, isReal: true },
     { name: 'Expenses', path: '/expenses', icon: Receipt, isReal: true },
     { name: 'Friend Ledgers', path: '/money-accounts', icon: BookOpen, isReal: true },
-    { name: 'Transactions', path: '#', icon: ArrowRightLeft, isReal: false, badge: 'Soon' },
+    { name: 'Transactions', path: '/transactions', icon: ArrowRightLeft, isReal: true },
     { name: 'Settlements', path: '/groups', icon: HandCoins, isReal: true },
     { name: 'Reports', path: '/reports', icon: BarChart3, isReal: true },
-    { name: 'Settings', path: '#', icon: Settings, isReal: false, badge: 'Soon' },
+    { name: 'Settings', path: '/settings', icon: Settings, isReal: true },
   ];
 
 
@@ -41,24 +41,24 @@ export const Sidebar = ({ isOpen, onClose }) => {
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform duration-200 ease-in-out md:translate-x-0 md:static ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-r border-slate-200/80 dark:border-slate-800/80 flex flex-col transition-colors duration-150 ease-in-out md:translate-x-0 md:static ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand Header */}
-        <div className="px-6 py-5 border-b border-slate-800/80 flex items-center space-x-3">
+        <div className="px-6 py-5 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center space-x-3">
           <div className="p-2 rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
             <Wallet className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white tracking-tight">MoneyFlow</h1>
-            <p className="text-[11px] text-slate-400 font-medium">Know where your money goes.</p>
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">MoneyFlow</h1>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Know where your money goes.</p>
           </div>
         </div>
 
         {/* Navigation Section */}
         <div className="flex-1 px-4 py-6 overflow-y-auto space-y-1">
-          <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Main Menu</p>
+          <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Main Menu</p>
           {navItems.map((item) => {
             const Icon = item.icon;
 
@@ -70,8 +70,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 className={({ isActive }) =>
                   `flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
                   }`
                 }
               >
@@ -83,15 +83,15 @@ export const Sidebar = ({ isOpen, onClose }) => {
             ) : (
               <div
                 key={item.name}
-                className="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-500 cursor-not-allowed hover:bg-slate-800/30"
-                title="Available in Phase 3+"
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 dark:text-slate-500 cursor-not-allowed hover:bg-slate-100/60 dark:hover:bg-slate-800/30"
+                title="Coming soon"
               >
                 <div className="flex items-center space-x-3">
-                  <Icon className="w-4 h-4 text-slate-500" />
+                  <Icon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <span>{item.name}</span>
                 </div>
                 {item.badge && (
-                  <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-semibold">
+                  <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full font-semibold">
                     {item.badge}
                   </span>
                 )}
@@ -101,22 +101,22 @@ export const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* User Profile Footer */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40">
+        <div className="p-4 border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-950/40">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 overflow-hidden">
-              <div className="w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-xs shrink-0">
+              <div className="w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-xs shrink-0">
                 {getInitials(user?.first_name, user?.last_name)}
               </div>
               <div className="overflow-hidden">
-                <p className="text-xs font-semibold text-white truncate">
+                <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
                   {user?.first_name} {user?.last_name}
                 </p>
-                <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
               </div>
             </div>
             <button
               onClick={logout}
-              className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+              className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />

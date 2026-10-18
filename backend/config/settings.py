@@ -26,8 +26,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS_ENV = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.20.7,192.168.20.2')
+ALLOWED_HOSTS_ENV = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.20.3,192.168.20.7,192.168.20.2')
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',') if host.strip()]
+if DEBUG and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('*')
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
@@ -157,14 +159,33 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-DEFAULT_CORS_ORIGINS = 'http://localhost:5173,http://127.0.0.1:5173,http://192.168.20.7:5173,http://192.168.20.2:5173,http://localhost:5174,http://127.0.0.1:5174,http://192.168.20.7:5174,http://192.168.20.2:5174'
+DEFAULT_CORS_ORIGINS = 'http://localhost:5173,http://127.0.0.1:5173,http://192.168.20.3:5173,http://192.168.20.7:5173,http://192.168.20.2:5173,http://localhost:5174,http://127.0.0.1:5174,http://192.168.20.3:5174,http://192.168.20.7:5174,http://192.168.20.2:5174'
 CORS_ALLOWED_ORIGINS_ENV = os.getenv('CORS_ALLOWED_ORIGINS', DEFAULT_CORS_ORIGINS)
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS_ENV.split(',') if origin.strip()]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost(:\d+)?$",
+    r"^http://127\.0\.0\.1(:\d+)?$",
+    r"^http://192\.168\.\d+\.\d+(:\d+)?$",
+]
 CORS_ALLOW_CREDENTIALS = True
 
 # Email & Password Reset Settings
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'MoneyFlow <noreply@moneyflow.local>')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() in ('true', '1', 't')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+
+if 'EMAIL_BACKEND' in os.environ:
+    EMAIL_BACKEND = os.environ['EMAIL_BACKEND']
+elif EMAIL_HOST_USER:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'MoneyFlow <noreply@moneyflow.local>')
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 PASSWORD_RESET_TIMEOUT = int(os.getenv('PASSWORD_RESET_TIMEOUT', 86400))  # 24 hours in seconds
+
 

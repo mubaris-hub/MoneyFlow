@@ -40,34 +40,34 @@ export const VoidTransactionModal = ({ isOpen, onClose, accountId, transaction, 
     <Modal isOpen={isOpen} onClose={onClose} title="Void Transaction">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
+          <div className="p-3 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-900/50 dark:text-rose-400 rounded-lg">
             {error}
           </div>
         )}
 
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 space-y-1">
+        <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-lg text-xs text-amber-800 dark:text-amber-300 space-y-1">
           <p className="font-bold">Target Transaction:</p>
           <p><span className="font-semibold">Type:</span> {transaction.transaction_type}</p>
           <p><span className="font-semibold">Description:</span> {transaction.description}</p>
           <p><span className="font-semibold">Amount:</span> {formatCurrency(transaction.amount)}</p>
-          <p className="text-[11px] text-amber-700 pt-1">
+          <p className="text-[11px] text-amber-700 dark:text-amber-400/80 pt-1">
             Note: Voiding will strike out this transaction and adjust the account balance. It will NOT be deleted from the audit history.
           </p>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Reason for Voiding *</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Reason for Voiding *</label>
           <textarea
             rows="2"
             placeholder="Explain why this transaction is being voided..."
             value={voidReason}
             onChange={(e) => setVoidReason(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+            className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 placeholder-slate-400 dark:placeholder-slate-500"
             required
           />
         </div>
 
-        <div className="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+        <div className="flex justify-end space-x-3 pt-3 border-t border-slate-100 dark:border-slate-800">
           <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

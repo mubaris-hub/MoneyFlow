@@ -1,4 +1,5 @@
 from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP
+from django.db.models import Q
 from rest_framework import serializers
 
 
@@ -307,4 +308,498 @@ def calculate_debt_simplification(member_balances):
             j += 1
 
     return suggested_settlements
+
+
+class TransactionHistoryService:
+    @staticmethod
+    def get_user_transactions(
+        user,
+        search=None,
+        transaction_type=None,
+        group_id=None,
+        date_from=None,
+        date_to=None,
+        status=None,
+        ordering='newest',
+        page=1,
+        page_size=20
+    ):
+        from apps.groups.models import Group
+        from apps.expenses.models import Expense, DirectPayment, Settlement
+        from apps.money_accounts.models import MoneyAccount, AccountTransaction
+        from django.db.models import Q
+
+        user_groups = Group.objects.filter(memberships__user=user)
+        user_accounts = MoneyAccount.objects.filter(Q(manager=user) | Q(owner=user))
+
+        if group_id:
+            user_groups = user_groups.filter(id=group_id)
+            user_accounts = user_accounts.filter(id=group_id)
+
+        all_transactions = []
+        normalized_type = (transaction_type or '').strip().upper()
+        normalized_status = (status or '').strip().upper()
+        search_query = (search or '').strip()
+
+        # 1. EXPENSES
+        if normalized_type in ['', 'ALL', 'EXPENSE']:
+            if normalized_status in ['', 'ALL', 'COMPLETED']:
+                exp_qs = Expense.objects.filter(
+                    group__in=user_groups,
+                    is_deleted=False
+                ).select_related('paid_by', 'created_by', 'group', 'category').prefetch_related('splits__user')
+
+                if date_from:
+                    exp_qs = exp_qs.filter(date__gte=date_from)
+                if date_to:
+                    exp_qs = exp_qs.filter(date__lte=date_to)
+                if search_query:
+                    exp_qs = exp_qs.filter(
+                        Q(description__icontains=search_query) |
+                        Q(paid_by__first_name__icontains=search_query) |
+                        Q(paid_by__last_name__icontains=search_query) |
+                        Q(paid_by__username__icontains=search_query) |
+                        Q(group__name__icontains=search_query)
+                    )
+
+                for exp in exp_qs:
+                    splits_list = list(exp.splits.all())
+                    user_split = next((s for s in splits_list if s.user_id == user.id), None)
+                    is_payer = (exp.paid_by_id == user.id)
+
+                    all_transactions.append({
+                        'id': f"expense_{exp.id}",
+                        'raw_id': str(exp.id),
+                        'transaction_type': 'EXPENSE',
+                        'type_label': 'Group Expense',
+                        'description': exp.description,
+                        'amount': str(exp.total_amount),
+                        'currency': exp.currency,
+                        'date': exp.date.isoformat() if hasattr(exp.date, 'isoformat') else str(exp.date),
+                        'created_at': exp.created_at.isoformat() if hasattr(exp.created_at, 'isoformat') else str(exp.created_at),
+                        'group': {
+                            'id': str(exp.group.id),
+                            'name': exp.group.name,
+                            'is_ledger': False,
+                        },
+                        'payer': {
+                            'id': str(exp.paid_by.id),
+                            'name': f"{exp.paid_by.first_name} {exp.paid_by.last_name}".strip() or exp.paid_by.username,
+                            'email': exp.paid_by.email,
+                        },
+                        'receiver': None,
+                        'category': {
+                            'id': exp.category.id,
+                            'name': exp.category.name,
+                            'icon': exp.category.icon
+                        } if exp.category else None,
+                        'status': 'COMPLETED',
+                        'status_label': 'Completed',
+                        'notes': exp.notes,
+                        'receipt_url': exp.receipt_url,
+                        'user_role': 'PAID' if is_payer else ('PARTICIPANT' if user_split else 'MEMBER'),
+                        'my_share': str(user_split.amount) if user_split else ('0.00' if not is_payer else str(exp.total_amount)),
+                        'participants': [
+                            {
+                                'user': {
+                                    'id': str(s.user.id),
+                                    'name': f"{s.user.first_name} {s.user.last_name}".strip() or s.user.username,
+                                    'email': s.user.email
+                                },
+                                'amount': str(s.amount),
+                                'percentage': str(s.percentage) if s.percentage is not None else None,
+                                'shares': s.shares
+                            }
+                            for s in splits_list
+                        ]
+                    })
+
+        # 2. DIRECT PAYMENTS / TRANSFERS
+        if normalized_type in ['', 'ALL', 'DIRECT_PAYMENT', 'TRANSFER', 'REPAYMENT']:
+            if normalized_status in ['', 'ALL', 'COMPLETED']:
+                dp_qs = DirectPayment.objects.filter(
+                    group__in=user_groups
+                ).select_related('sender', 'receiver', 'group')
+
+                if date_from:
+                    dp_qs = dp_qs.filter(date__gte=date_from)
+                if date_to:
+                    dp_qs = dp_qs.filter(date__lte=date_to)
+                if search_query:
+                    dp_qs = dp_qs.filter(
+                        Q(notes__icontains=search_query) |
+                        Q(sender__first_name__icontains=search_query) |
+                        Q(sender__last_name__icontains=search_query) |
+                        Q(receiver__first_name__icontains=search_query) |
+                        Q(receiver__last_name__icontains=search_query) |
+                        Q(group__name__icontains=search_query)
+                    )
+
+                for dp in dp_qs:
+                    sender_name = f"{dp.sender.first_name} {dp.sender.last_name}".strip() or dp.sender.username
+                    receiver_name = f"{dp.receiver.first_name} {dp.receiver.last_name}".strip() or dp.receiver.username
+
+                    all_transactions.append({
+                        'id': f"direct_payment_{dp.id}",
+                        'raw_id': str(dp.id),
+                        'transaction_type': 'DIRECT_PAYMENT',
+                        'type_label': 'Direct Transfer',
+                        'description': dp.notes or f"Transfer: {sender_name} → {receiver_name}",
+                        'amount': str(dp.amount),
+                        'currency': dp.currency,
+                        'date': dp.date.isoformat() if hasattr(dp.date, 'isoformat') else str(dp.date),
+                        'created_at': dp.created_at.isoformat() if hasattr(dp.created_at, 'isoformat') else str(dp.created_at),
+                        'group': {
+                            'id': str(dp.group.id),
+                            'name': dp.group.name,
+                            'is_ledger': False,
+                        },
+                        'payer': {
+                            'id': str(dp.sender.id),
+                            'name': sender_name,
+                            'email': dp.sender.email,
+                        },
+                        'receiver': {
+                            'id': str(dp.receiver.id),
+                            'name': receiver_name,
+                            'email': dp.receiver.email,
+                        },
+                        'category': {'id': None, 'name': 'Transfer', 'icon': 'ArrowRightLeft'},
+                        'status': 'COMPLETED',
+                        'status_label': 'Completed',
+                        'notes': dp.notes,
+                        'receipt_url': None,
+                        'user_role': 'SENDER' if dp.sender_id == user.id else ('RECEIVER' if dp.receiver_id == user.id else 'MEMBER'),
+                        'my_share': str(dp.amount) if (dp.sender_id == user.id or dp.receiver_id == user.id) else '0.00',
+                        'participants': []
+                    })
+
+        # 3. SETTLEMENTS
+        if normalized_type in ['', 'ALL', 'SETTLEMENT']:
+            st_qs = Settlement.objects.filter(
+                group__in=user_groups
+            ).select_related('sender', 'receiver', 'created_by', 'group')
+
+            if normalized_status and normalized_status != 'ALL':
+                st_qs = st_qs.filter(status=normalized_status)
+            if date_from:
+                st_qs = st_qs.filter(date__gte=date_from)
+            if date_to:
+                st_qs = st_qs.filter(date__lte=date_to)
+            if search_query:
+                st_qs = st_qs.filter(
+                    Q(notes__icontains=search_query) |
+                    Q(sender__first_name__icontains=search_query) |
+                    Q(sender__last_name__icontains=search_query) |
+                    Q(receiver__first_name__icontains=search_query) |
+                    Q(receiver__last_name__icontains=search_query) |
+                    Q(group__name__icontains=search_query)
+                )
+
+            for st in st_qs:
+                sender_name = f"{st.sender.first_name} {st.sender.last_name}".strip() or st.sender.username
+                receiver_name = f"{st.receiver.first_name} {st.receiver.last_name}".strip() or st.receiver.username
+
+                all_transactions.append({
+                    'id': f"settlement_{st.id}",
+                    'raw_id': str(st.id),
+                    'transaction_type': 'SETTLEMENT',
+                    'type_label': 'Group Settlement',
+                    'description': st.notes or f"Settlement: {sender_name} → {receiver_name}",
+                    'amount': str(st.amount),
+                    'currency': st.currency,
+                    'date': st.date.isoformat() if hasattr(st.date, 'isoformat') else str(st.date),
+                    'created_at': st.created_at.isoformat() if hasattr(st.created_at, 'isoformat') else str(st.created_at),
+                    'group': {
+                        'id': str(st.group.id),
+                        'name': st.group.name,
+                        'is_ledger': False,
+                    },
+                    'payer': {
+                        'id': str(st.sender.id),
+                        'name': sender_name,
+                        'email': st.sender.email,
+                    },
+                    'receiver': {
+                        'id': str(st.receiver.id),
+                        'name': receiver_name,
+                        'email': st.receiver.email,
+                    },
+                    'category': {'id': None, 'name': 'Settlement', 'icon': 'HandCoins'},
+                    'status': st.status,
+                    'status_label': st.get_status_display(),
+                    'notes': st.notes,
+                    'receipt_url': None,
+                    'user_role': 'SENDER' if st.sender_id == user.id else ('RECEIVER' if st.receiver_id == user.id else 'MEMBER'),
+                    'my_share': str(st.amount) if (st.sender_id == user.id or st.receiver_id == user.id) else '0.00',
+                    'participants': []
+                })
+
+        # 4. FRIEND LEDGER TRANSACTIONS
+        if normalized_type in ['', 'ALL', 'FRIEND_LEDGER', 'LEDGER']:
+            at_qs = AccountTransaction.objects.filter(
+                account__in=user_accounts
+            ).select_related('account', 'created_by', 'category')
+
+            if normalized_status == 'VOIDED':
+                at_qs = at_qs.filter(is_voided=True)
+            elif normalized_status == 'COMPLETED':
+                at_qs = at_qs.filter(is_voided=False)
+            elif normalized_status and normalized_status not in ['', 'ALL']:
+                # No match for PENDING or CANCELLED in Friend Ledgers
+                at_qs = at_qs.none()
+
+            if date_from:
+                at_qs = at_qs.filter(date__gte=date_from)
+            if date_to:
+                at_qs = at_qs.filter(date__lte=date_to)
+            if search_query:
+                at_qs = at_qs.filter(
+                    Q(description__icontains=search_query) |
+                    Q(notes__icontains=search_query) |
+                    Q(account__title__icontains=search_query)
+                )
+
+            for at in at_qs:
+                creator_name = f"{at.created_by.first_name} {at.created_by.last_name}".strip() or at.created_by.username
+
+                all_transactions.append({
+                    'id': f"account_tx_{at.id}",
+                    'raw_id': str(at.id),
+                    'transaction_type': 'FRIEND_LEDGER',
+                    'type_label': f"Friend Ledger ({at.get_transaction_type_display()})",
+                    'description': at.description,
+                    'amount': str(at.amount),
+                    'currency': at.account.currency,
+                    'date': at.date.isoformat() if hasattr(at.date, 'isoformat') else str(at.date),
+                    'created_at': at.created_at.isoformat() if hasattr(at.created_at, 'isoformat') else str(at.created_at),
+                    'group': {
+                        'id': str(at.account.id),
+                        'name': f"Ledger: {at.account.title}",
+                        'is_ledger': True,
+                    },
+                    'payer': {
+                        'id': str(at.created_by.id),
+                        'name': creator_name,
+                        'email': at.created_by.email,
+                    },
+                    'receiver': None,
+                    'category': {
+                        'id': at.category.id,
+                        'name': at.category.name,
+                        'icon': at.category.icon
+                    } if at.category else None,
+                    'status': 'VOIDED' if at.is_voided else 'COMPLETED',
+                    'status_label': 'Voided' if at.is_voided else 'Completed',
+                    'notes': at.notes,
+                    'receipt_url': at.receipt_url,
+                    'user_role': 'MANAGER' if at.account.manager_id == user.id else ('OWNER' if at.account.owner_id == user.id else 'MEMBER'),
+                    'my_share': str(at.amount),
+                    'participants': []
+                })
+
+        # Sorting
+        if ordering == 'oldest':
+            all_transactions.sort(key=lambda t: (t['date'], t['created_at']))
+        elif ordering == 'highest_amount':
+            all_transactions.sort(key=lambda t: Decimal(t['amount']), reverse=True)
+        elif ordering == 'lowest_amount':
+            all_transactions.sort(key=lambda t: Decimal(t['amount']))
+        else:  # newest
+            all_transactions.sort(key=lambda t: (t['date'], t['created_at']), reverse=True)
+
+        total_count = len(all_transactions)
+        total_volume = sum((Decimal(t['amount']) for t in all_transactions), Decimal('0.00')).quantize(Decimal('0.01'))
+
+        summary = {
+            'total_count': total_count,
+            'total_volume': str(total_volume),
+            'expenses_count': sum(1 for t in all_transactions if t['transaction_type'] == 'EXPENSE'),
+            'direct_payments_count': sum(1 for t in all_transactions if t['transaction_type'] == 'DIRECT_PAYMENT'),
+            'settlements_count': sum(1 for t in all_transactions if t['transaction_type'] == 'SETTLEMENT'),
+            'ledgers_count': sum(1 for t in all_transactions if t['transaction_type'] == 'FRIEND_LEDGER'),
+        }
+
+        # Pagination
+        try:
+            page = max(1, int(page))
+        except (ValueError, TypeError):
+            page = 1
+
+        try:
+            page_size = min(100, max(1, int(page_size)))
+        except (ValueError, TypeError):
+            page_size = 20
+
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_transactions = all_transactions[start_idx:end_idx]
+        total_pages = (total_count + page_size - 1) // page_size if page_size > 0 else 1
+
+        return {
+            'count': total_count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': total_pages,
+            'transactions': paginated_transactions,
+            'summary': summary
+        }
+
+    @staticmethod
+    def get_single_transaction(user, transaction_id):
+        from apps.groups.models import Group
+        from apps.expenses.models import Expense, DirectPayment, Settlement
+        from apps.money_accounts.models import MoneyAccount, AccountTransaction
+        from rest_framework.exceptions import PermissionDenied, NotFound
+
+        user_groups = Group.objects.filter(memberships__user=user)
+        user_accounts = MoneyAccount.objects.filter(Q(manager=user) | Q(owner=user))
+
+        if transaction_id.startswith('expense_'):
+            raw_id = transaction_id[len('expense_'):]
+            exp = Expense.objects.filter(id=raw_id, is_deleted=False).select_related('paid_by', 'created_by', 'group', 'category').prefetch_related('splits__user').first()
+            if not exp:
+                raise NotFound("Expense transaction not found.")
+            if not user_groups.filter(id=exp.group_id).exists():
+                raise PermissionDenied("You do not have access to this transaction.")
+            
+            splits_list = list(exp.splits.all())
+            user_split = next((s for s in splits_list if s.user_id == user.id), None)
+            is_payer = (exp.paid_by_id == user.id)
+
+            return {
+                'id': f"expense_{exp.id}",
+                'raw_id': str(exp.id),
+                'transaction_type': 'EXPENSE',
+                'type_label': 'Group Expense',
+                'description': exp.description,
+                'amount': str(exp.total_amount),
+                'currency': exp.currency,
+                'date': exp.date.isoformat() if hasattr(exp.date, 'isoformat') else str(exp.date),
+                'created_at': exp.created_at.isoformat() if hasattr(exp.created_at, 'isoformat') else str(exp.created_at),
+                'group': {'id': str(exp.group.id), 'name': exp.group.name, 'is_ledger': False},
+                'payer': {'id': str(exp.paid_by.id), 'name': f"{exp.paid_by.first_name} {exp.paid_by.last_name}".strip() or exp.paid_by.username, 'email': exp.paid_by.email},
+                'receiver': None,
+                'category': {'id': exp.category.id, 'name': exp.category.name, 'icon': exp.category.icon} if exp.category else None,
+                'status': 'COMPLETED',
+                'status_label': 'Completed',
+                'notes': exp.notes,
+                'receipt_url': exp.receipt_url,
+                'user_role': 'PAID' if is_payer else ('PARTICIPANT' if user_split else 'MEMBER'),
+                'my_share': str(user_split.amount) if user_split else ('0.00' if not is_payer else str(exp.total_amount)),
+                'participants': [
+                    {
+                        'user': {'id': str(s.user.id), 'name': f"{s.user.first_name} {s.user.last_name}".strip() or s.user.username, 'email': s.user.email},
+                        'amount': str(s.amount),
+                        'percentage': str(s.percentage) if s.percentage is not None else None,
+                        'shares': s.shares
+                    }
+                    for s in splits_list
+                ]
+            }
+
+        elif transaction_id.startswith('direct_payment_'):
+            raw_id = transaction_id[len('direct_payment_'):]
+            dp = DirectPayment.objects.filter(id=raw_id).select_related('sender', 'receiver', 'group').first()
+            if not dp:
+                raise NotFound("Direct payment transaction not found.")
+            if not user_groups.filter(id=dp.group_id).exists():
+                raise PermissionDenied("You do not have access to this transaction.")
+
+            sender_name = f"{dp.sender.first_name} {dp.sender.last_name}".strip() or dp.sender.username
+            receiver_name = f"{dp.receiver.first_name} {dp.receiver.last_name}".strip() or dp.receiver.username
+
+            return {
+                'id': f"direct_payment_{dp.id}",
+                'raw_id': str(dp.id),
+                'transaction_type': 'DIRECT_PAYMENT',
+                'type_label': 'Direct Transfer',
+                'description': dp.notes or f"Transfer: {sender_name} → {receiver_name}",
+                'amount': str(dp.amount),
+                'currency': dp.currency,
+                'date': dp.date.isoformat() if hasattr(dp.date, 'isoformat') else str(dp.date),
+                'created_at': dp.created_at.isoformat() if hasattr(dp.created_at, 'isoformat') else str(dp.created_at),
+                'group': {'id': str(dp.group.id), 'name': dp.group.name, 'is_ledger': False},
+                'payer': {'id': str(dp.sender.id), 'name': sender_name, 'email': dp.sender.email},
+                'receiver': {'id': str(dp.receiver.id), 'name': receiver_name, 'email': dp.receiver.email},
+                'category': {'id': None, 'name': 'Transfer', 'icon': 'ArrowRightLeft'},
+                'status': 'COMPLETED',
+                'status_label': 'Completed',
+                'notes': dp.notes,
+                'receipt_url': None,
+                'user_role': 'SENDER' if dp.sender_id == user.id else ('RECEIVER' if dp.receiver_id == user.id else 'MEMBER'),
+                'my_share': str(dp.amount) if (dp.sender_id == user.id or dp.receiver_id == user.id) else '0.00',
+                'participants': []
+            }
+
+        elif transaction_id.startswith('settlement_'):
+            raw_id = transaction_id[len('settlement_'):]
+            st = Settlement.objects.filter(id=raw_id).select_related('sender', 'receiver', 'created_by', 'group').first()
+            if not st:
+                raise NotFound("Settlement transaction not found.")
+            if not user_groups.filter(id=st.group_id).exists():
+                raise PermissionDenied("You do not have access to this transaction.")
+
+            sender_name = f"{st.sender.first_name} {st.sender.last_name}".strip() or st.sender.username
+            receiver_name = f"{st.receiver.first_name} {st.receiver.last_name}".strip() or st.receiver.username
+
+            return {
+                'id': f"settlement_{st.id}",
+                'raw_id': str(st.id),
+                'transaction_type': 'SETTLEMENT',
+                'type_label': 'Group Settlement',
+                'description': st.notes or f"Settlement: {sender_name} → {receiver_name}",
+                'amount': str(st.amount),
+                'currency': st.currency,
+                'date': st.date.isoformat() if hasattr(st.date, 'isoformat') else str(st.date),
+                'created_at': st.created_at.isoformat() if hasattr(st.created_at, 'isoformat') else str(st.created_at),
+                'group': {'id': str(st.group.id), 'name': st.group.name, 'is_ledger': False},
+                'payer': {'id': str(st.sender.id), 'name': sender_name, 'email': st.sender.email},
+                'receiver': {'id': str(st.receiver.id), 'name': receiver_name, 'email': st.receiver.email},
+                'category': {'id': None, 'name': 'Settlement', 'icon': 'HandCoins'},
+                'status': st.status,
+                'status_label': st.get_status_display(),
+                'notes': st.notes,
+                'receipt_url': None,
+                'user_role': 'SENDER' if st.sender_id == user.id else ('RECEIVER' if st.receiver_id == user.id else 'MEMBER'),
+                'my_share': str(st.amount) if (st.sender_id == user.id or st.receiver_id == user.id) else '0.00',
+                'participants': []
+            }
+
+        elif transaction_id.startswith('account_tx_'):
+            raw_id = transaction_id[len('account_tx_'):]
+            at = AccountTransaction.objects.filter(id=raw_id).select_related('account', 'created_by', 'category').first()
+            if not at:
+                raise NotFound("Ledger transaction not found.")
+            if not user_accounts.filter(id=at.account_id).exists():
+                raise PermissionDenied("You do not have access to this transaction.")
+
+            creator_name = f"{at.created_by.first_name} {at.created_by.last_name}".strip() or at.created_by.username
+
+            return {
+                'id': f"account_tx_{at.id}",
+                'raw_id': str(at.id),
+                'transaction_type': 'FRIEND_LEDGER',
+                'type_label': f"Friend Ledger ({at.get_transaction_type_display()})",
+                'description': at.description,
+                'amount': str(at.amount),
+                'currency': at.account.currency,
+                'date': at.date.isoformat() if hasattr(at.date, 'isoformat') else str(at.date),
+                'created_at': at.created_at.isoformat() if hasattr(at.created_at, 'isoformat') else str(at.created_at),
+                'group': {'id': str(at.account.id), 'name': f"Ledger: {at.account.title}", 'is_ledger': True},
+                'payer': {'id': str(at.created_by.id), 'name': creator_name, 'email': at.created_by.email},
+                'receiver': None,
+                'category': {'id': at.category.id, 'name': at.category.name, 'icon': at.category.icon} if at.category else None,
+                'status': 'VOIDED' if at.is_voided else 'COMPLETED',
+                'status_label': 'Voided' if at.is_voided else 'Completed',
+                'notes': at.notes,
+                'receipt_url': at.receipt_url,
+                'user_role': 'MANAGER' if at.account.manager_id == user.id else ('OWNER' if at.account.owner_id == user.id else 'MEMBER'),
+                'my_share': str(at.amount),
+                'participants': []
+            }
+
+        else:
+            raise NotFound("Invalid transaction ID format.")
+
 

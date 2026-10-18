@@ -83,7 +83,7 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Friend's Email *</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Friend's Email *</label>
             <Input
               type="email"
               name="owner_email"
@@ -97,12 +97,12 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Currency</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Currency</label>
             <select
               name="currency"
               value={formData.currency}
               onChange={handleChange}
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <option value="INR">INR (₹)</option>
               <option value="USD">USD ($)</option>
@@ -118,26 +118,26 @@ export const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
                 name="allow_overdraft"
                 checked={formData.allow_overdraft}
                 onChange={handleChange}
-                className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                className="w-4 h-4 text-emerald-600 border-slate-300 dark:border-slate-600 rounded focus:ring-emerald-500"
               />
-              <span className="ml-2 text-xs font-medium text-slate-700">Allow Overdraft</span>
+              <span className="ml-2 text-xs font-medium text-slate-700 dark:text-slate-300">Allow Overdraft</span>
             </label>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Notes / Terms</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Notes / Terms</label>
           <textarea
             name="notes"
             rows="2"
             placeholder="Optional agreement notes..."
             value={formData.notes}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
-        <div className="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+        <div className="flex justify-end space-x-3 pt-3 border-t border-slate-100 dark:border-slate-800">
           <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

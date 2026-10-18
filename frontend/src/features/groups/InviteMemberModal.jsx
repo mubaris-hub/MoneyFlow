@@ -51,8 +51,8 @@ export const InviteMemberModal = ({ isOpen, onClose, group, onMemberAdded }) => 
     <Modal isOpen={isOpen} onClose={onClose} title={`Invite to ${group.name}`}>
       <div className="space-y-6">
         {/* Copy Invite Code Section */}
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+        <div className="p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
             Share Group Invite Code
           </label>
           <div className="flex items-center space-x-2">
@@ -60,14 +60,14 @@ export const InviteMemberModal = ({ isOpen, onClose, group, onMemberAdded }) => 
               type="text"
               readOnly
               value={group.invite_code || ''}
-              className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono font-bold text-slate-800 tracking-wider focus:outline-none"
+              className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 tracking-wider focus:outline-none"
             />
             <Button variant="secondary" size="md" onClick={handleCopyCode}>
               {copied ? <Check className="w-4 h-4 text-emerald-600 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
               {copied ? 'Copied' : 'Copy'}
             </Button>
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
             Friends can join this group instantly using this invite code.
           </p>
         </div>
@@ -75,10 +75,10 @@ export const InviteMemberModal = ({ isOpen, onClose, group, onMemberAdded }) => 
         {/* Divide Line */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
+            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-slate-400 font-semibold">Or Add Directly</span>
+            <span className="bg-white dark:bg-slate-900 px-2 text-slate-400 font-semibold">Or Add Directly</span>
           </div>
         </div>
 

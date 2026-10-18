@@ -1,8 +1,12 @@
-from rest_framework import status, permissions, generics
+from rest_framework import status, permissions, generics, parsers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.core.exceptions import ValidationError as DjangoValidationError
+
+from django.utils import timezone
+from .ocr import validate_receipt_image, OCREngine
 
 from .models import Category, Expense, ExpenseSplit, DirectPayment
 from .serializers import (
@@ -60,6 +64,31 @@ class ExpenseListCreateView(APIView):
     def post(self, request):
         serializer = CreateExpenseSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
+            # Duplicate submission protection: prevent identical expense within last 4 seconds
+            group_id = serializer.validated_data.get('group_id')
+            description = serializer.validated_data.get('description')
+            total_amount = serializer.validated_data.get('total_amount')
+            paid_by_id = serializer.validated_data.get('paid_by_id')
+            date_val = serializer.validated_data.get('date') or timezone.now().date()
+
+            recent_duplicate = Expense.objects.filter(
+                group_id=group_id,
+                description=description,
+                total_amount=total_amount,
+                paid_by_id=paid_by_id,
+                created_by=request.user,
+                date=date_val,
+                created_at__gte=timezone.now() - timezone.timedelta(seconds=4),
+                is_deleted=False
+            ).first()
+
+            if recent_duplicate:
+                full_serializer = ExpenseSerializer(recent_duplicate, context={'request': request})
+                return Response({
+                    'message': 'Expense already recorded',
+                    'expense': full_serializer.data
+                }, status=status.HTTP_200_OK)
+
             expense = serializer.save()
             full_serializer = ExpenseSerializer(expense, context={'request': request})
             return Response({
@@ -324,4 +353,87 @@ class SettlementDetailView(APIView):
             settlement.status = 'CANCELLED'
             settlement.save()
         return Response({'message': 'Settlement cancelled successfully'}, status=status.HTTP_200_OK)
+
+
+class ReceiptScanView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+
+    def post(self, request):
+        """
+        Receives an uploaded receipt image, validates it, and extracts structured OCR data.
+        Does NOT create any transaction or change account balances.
+        """
+        receipt_file = request.FILES.get('receipt_image')
+        if not receipt_file:
+            return Response(
+                {'error': 'Receipt image file is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            validate_receipt_image(receipt_file)
+        except DjangoValidationError as e:
+            return Response(
+                {'error': e.message if hasattr(e, 'message') else str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            extracted_data = OCREngine.process_receipt(receipt_file)
+            return Response({
+                'success': True,
+                'extracted_data': extracted_data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to process receipt image: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class TransactionListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from .services import TransactionHistoryService
+
+        search = request.query_params.get('search')
+        transaction_type = request.query_params.get('transaction_type')
+        group_id = request.query_params.get('group_id')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        status_param = request.query_params.get('status')
+        ordering = request.query_params.get('ordering', 'newest')
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 20)
+
+        data = TransactionHistoryService.get_user_transactions(
+            user=request.user,
+            search=search,
+            transaction_type=transaction_type,
+            group_id=group_id,
+            date_from=date_from,
+            date_to=date_to,
+            status=status_param,
+            ordering=ordering,
+            page=page,
+            page_size=page_size
+        )
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class TransactionDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, transaction_id):
+        from .services import TransactionHistoryService
+
+        data = TransactionHistoryService.get_single_transaction(
+            user=request.user,
+            transaction_id=transaction_id
+        )
+        return Response({'transaction': data}, status=status.HTTP_200_OK)
+
+
 

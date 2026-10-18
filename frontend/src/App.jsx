@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
 import LoginPage from './features/auth/LoginPage';
@@ -14,12 +15,16 @@ import ExpenseListPage from './features/expenses/ExpenseListPage';
 import MoneyAccountsListPage from './features/money-accounts/MoneyAccountsListPage';
 import MoneyAccountDetailPage from './features/money-accounts/MoneyAccountDetailPage';
 import InvitationRespondPage from './features/money-accounts/InvitationRespondPage';
+import ReportsPage from './features/reports/ReportsPage';
+import TransactionsPage from './features/transactions/TransactionsPage';
+import SettingsPage from './features/settings/SettingsPage';
 
 export const App = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <Routes>
+    <ThemeProvider>
+      <Router>
+        <AuthProvider>
+          <Routes>
           {/* Public Authentication Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -43,6 +48,9 @@ export const App = () => {
             <Route path="money-accounts" element={<MoneyAccountsListPage />} />
             <Route path="money-accounts/:id" element={<MoneyAccountDetailPage />} />
             <Route path="money-accounts/invitation" element={<InvitationRespondPage />} />
+            <Route path="transactions" element={<TransactionsPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
 
           {/* Fallback Catch-all Route */}
@@ -50,7 +58,8 @@ export const App = () => {
         </Routes>
       </AuthProvider>
     </Router>
-  );
+  </ThemeProvider>
+);
 };
 
 export default App;

@@ -67,6 +67,24 @@ export const authService = {
   async confirmPasswordReset(data) {
     const response = await api.post('/auth/password-reset-confirm/', data);
     return response.data;
+  },
+
+  async updateProfile(profileData) {
+    const response = await api.patch('/auth/me/', profileData);
+    if (response.data.user) {
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  },
+
+  async changePassword(passwordData) {
+    const response = await api.post('/auth/change-password/', passwordData);
+    return response.data;
+  },
+
+  async deactivateAccount(confirmationData) {
+    const response = await api.post('/auth/deactivate/', confirmationData);
+    return response.data;
   }
 };
 

@@ -90,21 +90,21 @@ export const SplitSelector = ({ groupMembers = [], totalAmount = 0, onChange }) 
   };
 
   return (
-    <div className="space-y-4 border border-slate-200 rounded-xl p-4 bg-slate-50/50">
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-        <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center">
-          <Calculator className="w-4 h-4 mr-1.5 text-emerald-600" />
+    <div className="space-y-4 border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-900/50">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+        <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center">
+          <Calculator className="w-4 h-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
           Expense Splitting Mode
         </label>
       </div>
 
       {/* Split Type Selector Tabs */}
-      <div className="grid grid-cols-4 gap-1 p-1 bg-slate-200/70 rounded-lg text-xs font-semibold text-slate-600">
+      <div className="grid grid-cols-4 gap-1 p-1 bg-slate-200/70 dark:bg-slate-800 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400">
         <button
           type="button"
           onClick={() => setSplitType('EQUAL')}
-          className={`py-1.5 rounded-md transition-all ${
-            splitType === 'EQUAL' ? 'bg-white text-emerald-700 shadow-xs' : 'hover:text-slate-900'
+          className={`py-1.5 rounded-md transition-all cursor-pointer ${
+            splitType === 'EQUAL' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs' : 'hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           Equal (=)
@@ -113,8 +113,8 @@ export const SplitSelector = ({ groupMembers = [], totalAmount = 0, onChange }) 
         <button
           type="button"
           onClick={() => setSplitType('EXACT')}
-          className={`py-1.5 rounded-md transition-all ${
-            splitType === 'EXACT' ? 'bg-white text-emerald-700 shadow-xs' : 'hover:text-slate-900'
+          className={`py-1.5 rounded-md transition-all cursor-pointer ${
+            splitType === 'EXACT' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs' : 'hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           Exact (₹)
@@ -123,8 +123,8 @@ export const SplitSelector = ({ groupMembers = [], totalAmount = 0, onChange }) 
         <button
           type="button"
           onClick={() => setSplitType('PERCENTAGE')}
-          className={`py-1.5 rounded-md transition-all ${
-            splitType === 'PERCENTAGE' ? 'bg-white text-emerald-700 shadow-xs' : 'hover:text-slate-900'
+          className={`py-1.5 rounded-md transition-all cursor-pointer ${
+            splitType === 'PERCENTAGE' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs' : 'hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           Percentage (%)
@@ -133,8 +133,8 @@ export const SplitSelector = ({ groupMembers = [], totalAmount = 0, onChange }) 
         <button
           type="button"
           onClick={() => setSplitType('SHARES')}
-          className={`py-1.5 rounded-md transition-all ${
-            splitType === 'SHARES' ? 'bg-white text-emerald-700 shadow-xs' : 'hover:text-slate-900'
+          className={`py-1.5 rounded-md transition-all cursor-pointer ${
+            splitType === 'SHARES' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs' : 'hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           Shares (Ratio)
@@ -150,7 +150,7 @@ export const SplitSelector = ({ groupMembers = [], totalAmount = 0, onChange }) 
           return (
             <div
               key={u.id}
-              className="flex items-center justify-between p-2.5 bg-white border border-slate-200/90 rounded-lg text-xs"
+              className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-lg text-xs"
             >
               <div className="flex items-center space-x-2.5">
                 {splitType === 'EQUAL' && (
@@ -158,36 +158,36 @@ export const SplitSelector = ({ groupMembers = [], totalAmount = 0, onChange }) 
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => toggleUserSelection(u.id)}
-                    className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                    className="rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
                   />
                 )}
-                <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-[10px]">
+                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold flex items-center justify-center text-[10px]">
                   {getInitials(u.first_name, u.last_name)}
                 </div>
                 <div>
-                  <p className="font-bold text-slate-800">{u.first_name} {u.last_name}</p>
-                  <p className="text-[10px] text-slate-400">{u.email}</p>
+                  <p className="font-bold text-slate-800 dark:text-slate-100">{u.first_name} {u.last_name}</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">{u.email}</p>
                 </div>
               </div>
 
               {/* Mode-specific input controls */}
               <div className="flex items-center space-x-2">
                 {splitType === 'EQUAL' && (
-                  <span className="font-semibold text-slate-600">
+                  <span className="font-semibold text-slate-600 dark:text-slate-300">
                     {isSelected ? `₹${((totalAmount || 0) / (selectedUserIds.length || 1)).toFixed(2)}` : '₹0.00'}
                   </span>
                 )}
 
                 {splitType === 'EXACT' && (
                   <div className="relative w-24">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">₹</span>
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-semibold">₹</span>
                     <input
                       type="number"
                       step="0.01"
                       placeholder="0.00"
                       value={exactAmounts[u.id] || ''}
                       onChange={(e) => setExactAmounts({ ...exactAmounts, [u.id]: e.target.value })}
-                      className="w-full pl-6 pr-2 py-1 text-xs border border-slate-300 rounded focus:outline-none focus:border-emerald-600"
+                      className="w-full pl-6 pr-2 py-1 text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded focus:outline-none focus:border-emerald-600"
                     />
                   </div>
                 )}
@@ -200,9 +200,9 @@ export const SplitSelector = ({ groupMembers = [], totalAmount = 0, onChange }) 
                       placeholder="0"
                       value={percentages[u.id] || ''}
                       onChange={(e) => setPercentages({ ...percentages, [u.id]: e.target.value })}
-                      className="w-full pr-6 pl-2 py-1 text-xs border border-slate-300 rounded focus:outline-none focus:border-emerald-600 text-right"
+                      className="w-full pr-6 pl-2 py-1 text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded focus:outline-none focus:border-emerald-600 text-right"
                     />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">%</span>
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-semibold">%</span>
                   </div>
                 )}
 
@@ -215,7 +215,7 @@ export const SplitSelector = ({ groupMembers = [], totalAmount = 0, onChange }) 
                       placeholder="1"
                       value={shares[u.id] || 1}
                       onChange={(e) => setShares({ ...shares, [u.id]: e.target.value })}
-                      className="w-full px-2 py-1 text-xs border border-slate-300 rounded focus:outline-none focus:border-emerald-600 text-center font-bold"
+                      className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded focus:outline-none focus:border-emerald-600 text-center font-bold"
                     />
                   </div>
                 )}

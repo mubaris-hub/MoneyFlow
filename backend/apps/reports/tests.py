@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 
 from apps.groups.models import Group, GroupMember
-from apps.expenses.models import Expense, ExpenseSplit, Category
+from apps.expenses.models import Expense, ExpenseSplit, Category, DirectPayment, Settlement
 from apps.money_accounts.models import MoneyAccount, AccountTransaction
 from apps.money_accounts.services import MoneyAccountService
 from apps.reports.services import ReportService
@@ -156,4 +156,130 @@ class ReportServicesAndAPITests(APITestCase):
         res = self.client.get('/api/v1/reports/dashboard/')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(Decimal(res.data['personal_expenses_share']), Decimal('0.00'))
+        self.assertEqual(Decimal(res.data['available_balance']), Decimal('0.00'))
+        self.assertEqual(Decimal(res.data['money_received']), Decimal('0.00'))
+        self.assertEqual(res.data['received_count'], 0)
+        self.assertEqual(Decimal(res.data['total_expenses_share']), Decimal('0.00'))
+        self.assertEqual(res.data['expenses_count'], 0)
+        self.assertEqual(Decimal(res.data['pending_settlements_amount']), Decimal('0.00'))
+        self.assertEqual(res.data['pending_settlements_count'], 0)
         self.assertEqual(len(res.data['category_breakdown']), 0)
+
+    def test_dashboard_summary_cards_calculations_and_api(self):
+        self.client.force_authenticate(user=self.user1)
+        res = self.client.get('/api/v1/reports/dashboard/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # Available Balance: user1 paid 1000, share is 1500 -> owes 500
+        self.assertEqual(Decimal(res.data['available_balance']), Decimal('-500.00'))
+
+        # Money Received: initially 0
+        self.assertEqual(Decimal(res.data['money_received']), Decimal('0.00'))
+        self.assertEqual(res.data['received_count'], 0)
+
+        # Total Expenses: assigned shares 500 + 1000 = 1500
+        self.assertEqual(Decimal(res.data['total_expenses_share']), Decimal('1500.00'))
+        self.assertEqual(res.data['expenses_count'], 2)
+
+        # Pending Settlements: outstanding debt to be cleared is 500
+        self.assertEqual(Decimal(res.data['pending_settlements_amount']), Decimal('500.00'))
+        self.assertEqual(res.data['pending_settlements_count'], 0)
+
+    def test_dashboard_money_received_from_direct_payment_and_settlement(self):
+        # 1. DirectPayment received by user1 (200.00)
+        DirectPayment.objects.create(
+            sender=self.user2,
+            receiver=self.user1,
+            group=self.group,
+            amount=Decimal('200.00'),
+            date=date(2026, 10, 6)
+        )
+
+        # 2. Completed Settlement received by user1 (300.00)
+        Settlement.objects.create(
+            sender=self.user2,
+            receiver=self.user1,
+            group=self.group,
+            amount=Decimal('300.00'),
+            status='COMPLETED',
+            created_by=self.user2,
+            date=date(2026, 10, 7)
+        )
+
+        # 3. PENDING and CANCELLED settlements should NOT be counted in money_received
+        Settlement.objects.create(
+            sender=self.user2,
+            receiver=self.user1,
+            group=self.group,
+            amount=Decimal('100.00'),
+            status='PENDING',
+            created_by=self.user2,
+            date=date(2026, 10, 8)
+        )
+        Settlement.objects.create(
+            sender=self.user2,
+            receiver=self.user1,
+            group=self.group,
+            amount=Decimal('50.00'),
+            status='CANCELLED',
+            created_by=self.user2,
+            date=date(2026, 10, 9)
+        )
+
+        self.client.force_authenticate(user=self.user1)
+        res = self.client.get('/api/v1/reports/dashboard/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # Money Received should sum DirectPayment (200) + COMPLETED Settlement (300) = 500.00, count = 2
+        self.assertEqual(Decimal(res.data['money_received']), Decimal('500.00'))
+        self.assertEqual(res.data['received_count'], 2)
+
+        # Pending settlements count includes the 1 PENDING settlement
+        self.assertEqual(res.data['pending_settlements_count'], 1)
+
+    def test_dashboard_expense_count_matches_user_share_only(self):
+        # Create an expense in the group where user1 is NOT in splits (only user2 has share)
+        exp_solo = Expense.objects.create(
+            description='Solo User2 Snack',
+            total_amount=Decimal('150.00'),
+            paid_by=self.user2,
+            created_by=self.user2,
+            group=self.group,
+            category=self.cat_food,
+            split_type='EXACT',
+            date=date(2026, 10, 10)
+        )
+        ExpenseSplit.objects.create(expense=exp_solo, user=self.user2, amount=Decimal('150.00'))
+
+        self.client.force_authenticate(user=self.user1)
+        res = self.client.get('/api/v1/reports/dashboard/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # Even though there are 3 group expenses, user1 only has shares in 2 of them!
+        self.assertEqual(Decimal(res.data['total_expenses_share']), Decimal('1500.00'))
+        self.assertEqual(res.data['expenses_count'], 2)
+
+    def test_dashboard_pending_settlement_isolation_across_groups_and_users(self):
+        # Create another group and another settlement between unrelated users
+        other_group = Group.objects.create(name='Other Roommates', created_by=self.unrelated_user)
+        other_user = User.objects.create_user(username='other_u', email='other_u@example.com', password='Password123!')
+        GroupMember.objects.create(group=other_group, user=self.unrelated_user, role='ADMIN')
+        GroupMember.objects.create(group=other_group, user=other_user, role='MEMBER')
+
+        Settlement.objects.create(
+            sender=self.unrelated_user,
+            receiver=other_user,
+            group=other_group,
+            amount=Decimal('999.00'),
+            status='PENDING',
+            created_by=self.unrelated_user,
+            date=date(2026, 10, 10)
+        )
+
+        # user1 should not see other_group's pending settlement
+        self.client.force_authenticate(user=self.user1)
+        res = self.client.get('/api/v1/reports/dashboard/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['pending_settlements_count'], 0)
+        self.assertEqual(Decimal(res.data['pending_settlements_amount']), Decimal('500.00'))
+

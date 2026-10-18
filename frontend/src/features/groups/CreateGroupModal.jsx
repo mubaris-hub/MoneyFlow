@@ -73,14 +73,14 @@ export const CreateGroupModal = ({ isOpen, onClose, onGroupCreated }) => {
         />
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
             Group Type
           </label>
           <select
             name="group_type"
             value={formData.group_type}
             onChange={handleChange}
-            className="w-full text-sm font-normal text-slate-900 bg-white border border-slate-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/15"
+            className="w-full text-sm font-normal text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/15"
           >
             {groupTypeOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -91,7 +91,7 @@ export const CreateGroupModal = ({ isOpen, onClose, onGroupCreated }) => {
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
             Description (Optional)
           </label>
           <textarea
@@ -100,7 +100,7 @@ export const CreateGroupModal = ({ isOpen, onClose, onGroupCreated }) => {
             placeholder="What is this group for?"
             value={formData.description}
             onChange={handleChange}
-            className="w-full text-sm text-slate-900 bg-white border border-slate-300 rounded-lg p-3.5 focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/15 placeholder:text-slate-400"
+            className="w-full text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3.5 focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/15 placeholder:text-slate-400"
           />
         </div>
 

@@ -101,6 +101,21 @@ class AuthAPITests(TestCase):
         self.assertEqual(resp2.status_code, status.HTTP_200_OK)
         self.assertEqual(resp2.data['message'], "If an account with that email exists, a password reset link has been sent.")
 
+    def test_password_reset_email_sent_to_mail_outbox(self):
+        from django.core import mail
+        self.client.post(self.register_url, self.user_data, format='json')
+        reset_url = reverse('password_reset_request')
+
+        response = self.client.post(reset_url, {"email": "jane@example.com"}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(len(mail.outbox), 1)
+        sent_email = mail.outbox[0]
+        self.assertEqual(sent_email.to, ["jane@example.com"])
+        self.assertIn("Password Reset Request", sent_email.subject)
+        self.assertIn("/reset-password?uid=", sent_email.body)
+        self.assertIn("&token=", sent_email.body)
+
     def test_password_reset_confirm_successful_flow(self):
         from django.contrib.auth.tokens import default_token_generator
         from django.utils.http import urlsafe_base64_encode
@@ -186,4 +201,134 @@ class AuthAPITests(TestCase):
         }
         response = self.client.post(confirm_url, confirm_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class UserSettingsAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="settings_user",
+            email="settings@example.com",
+            password="OriginalPassword123!",
+            first_name="John",
+            last_name="Doe",
+            default_currency="INR"
+        )
+        self.other_user = User.objects.create_user(
+            username="other_user",
+            email="other@example.com",
+            password="OriginalPassword123!",
+            first_name="Other",
+            last_name="Person"
+        )
+        self.me_url = reverse('auth_me')
+        self.change_pwd_url = reverse('auth_change_password')
+        self.deactivate_url = reverse('auth_deactivate_account')
+        self.client.force_authenticate(user=self.user)
+
+    def test_get_current_user_profile(self):
+        response = self.client.get(self.me_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user_data = response.data['user']
+        self.assertEqual(user_data['email'], "settings@example.com")
+        self.assertEqual(user_data['default_currency'], "INR")
+        self.assertEqual(user_data['date_format'], "YYYY-MM-DD")
+        self.assertTrue(user_data['notify_in_app'])
+
+    def test_update_profile_success(self):
+        update_data = {
+            "first_name": "Johnny",
+            "last_name": "Smith",
+            "default_currency": "USD",
+            "date_format": "DD/MM/YYYY",
+            "notify_in_app": False,
+            "notify_on_friend_ledgers": False
+        }
+        response = self.client.patch(self.me_url, update_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['user']['first_name'], "Johnny")
+        self.assertEqual(response.data['user']['last_name'], "Smith")
+        self.assertEqual(response.data['user']['default_currency'], "USD")
+        self.assertEqual(response.data['user']['date_format'], "DD/MM/YYYY")
+        self.assertFalse(response.data['user']['notify_in_app'])
+        self.assertFalse(response.data['user']['notify_on_friend_ledgers'])
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, "Johnny")
+        self.assertEqual(self.user.default_currency, "USD")
+        self.assertFalse(self.user.notify_in_app)
+
+    def test_update_profile_username_taken(self):
+        response = self.client.patch(self.me_url, {"username": "other_user"}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("username", response.data)
+
+    def test_change_password_success(self):
+        data = {
+            "current_password": "OriginalPassword123!",
+            "new_password": "BrandNewPassword123!",
+            "confirm_password": "BrandNewPassword123!"
+        }
+        response = self.client.post(self.change_pwd_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("BrandNewPassword123!"))
+
+    def test_change_password_wrong_current(self):
+        data = {
+            "current_password": "WrongPassword123!",
+            "new_password": "BrandNewPassword123!",
+            "confirm_password": "BrandNewPassword123!"
+        }
+        response = self.client.post(self.change_pwd_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_password_mismatch(self):
+        data = {
+            "current_password": "OriginalPassword123!",
+            "new_password": "BrandNewPassword123!",
+            "confirm_password": "DifferentPassword123!"
+        }
+        response = self.client.post(self.change_pwd_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_notification_preference_respected(self):
+        from apps.notifications.services import NotificationService
+        from apps.notifications.models import Notification
+
+        # When notify_in_app is False, NotificationService returns None
+        self.user.notify_in_app = False
+        self.user.save()
+
+        notif = NotificationService.create_notification(
+            recipient=self.user,
+            notification_type=Notification.NotificationType.DEPOSIT_RECORDED,
+            title="Deposit Added",
+            message="A deposit was made"
+        )
+        self.assertIsNone(notif)
+
+        # When notify_in_app is True but notify_on_friend_ledgers is False
+        self.user.notify_in_app = True
+        self.user.notify_on_friend_ledgers = False
+        self.user.save()
+
+        notif2 = NotificationService.create_notification(
+            recipient=self.user,
+            notification_type=Notification.NotificationType.DEPOSIT_RECORDED,
+            title="Deposit Added",
+            message="A deposit was made"
+        )
+        self.assertIsNone(notif2)
+
+    def test_deactivate_account_success(self):
+        data = {
+            "password": "OriginalPassword123!",
+            "confirmation": "DELETE"
+        }
+        response = self.client.post(self.deactivate_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
 

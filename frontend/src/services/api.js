@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://192.168.20.7:8000/api/v1';
+const getDefaultApiBaseUrl = () => {
+  if (typeof window !== 'undefined' && window.location && window.location.hostname) {
+    return `http://${window.location.hostname}:8000/api/v1`;
+  }
+  return 'http://127.0.0.1:8000/api/v1';
+};
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || getDefaultApiBaseUrl();
 
 const PUBLIC_ENDPOINTS = [
   '/auth/login',

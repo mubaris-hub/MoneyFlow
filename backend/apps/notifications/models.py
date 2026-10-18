@@ -41,6 +41,13 @@ class Notification(models.Model):
         blank=True,
         related_name='notifications'
     )
+    invitation = models.ForeignKey(
+        'money_accounts.AccountInvitation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notifications'
+    )
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     read_at = models.DateTimeField(null=True, blank=True)

@@ -8,9 +8,11 @@ import Badge from '../../components/ui/Badge';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import CreateExpenseModal from './CreateExpenseModal';
+import ReceiptScanModal from './ReceiptScanModal';
 import { getInitials, formatINR } from '../../utils/formatters';
 import {
   Receipt,
+  ScanLine,
   Plus,
   Search,
   Filter,
@@ -38,6 +40,7 @@ export const ExpenseListPage = () => {
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
 
   const fetchFilters = async () => {
@@ -94,15 +97,20 @@ export const ExpenseListPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Expenses</h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Expenses</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Track and split expenses across your groups.
           </p>
         </div>
 
-        <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-1.5" /> Log Expense
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button variant="outline" onClick={() => setIsScanModalOpen(true)}>
+            <ScanLine className="w-4 h-4 mr-1.5 text-emerald-600 dark:text-emerald-400" /> Scan Receipt
+          </Button>
+          <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-1.5" /> Log Expense
+          </Button>
+        </div>
       </div>
 
       {/* Filter & Search Bar */}
@@ -116,7 +124,7 @@ export const ExpenseListPage = () => {
               placeholder="Search by description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-emerald-600"
+              className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-600"
             />
           </div>
 
@@ -124,7 +132,7 @@ export const ExpenseListPage = () => {
           <select
             value={selectedGroup}
             onChange={(e) => setSelectedGroup(e.target.value)}
-            className="w-full py-2 px-3 text-xs bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-emerald-600 font-medium"
+            className="w-full py-2 px-3 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-emerald-600 font-medium"
           >
             <option value="">All Groups</option>
             {groups.map(g => (
@@ -136,7 +144,7 @@ export const ExpenseListPage = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full py-2 px-3 text-xs bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-emerald-600 font-medium"
+            className="w-full py-2 px-3 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-emerald-600 font-medium"
           >
             <option value="">All Categories</option>
             {categories.map(c => (
@@ -150,16 +158,16 @@ export const ExpenseListPage = () => {
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center space-y-3">
           <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-          <p className="text-sm font-medium text-slate-500">Loading expenses...</p>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading expenses...</p>
         </div>
       ) : expenses.length === 0 ? (
         <Card className="py-16 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mx-auto">
+          <div className="w-16 h-16 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 flex items-center justify-center mx-auto">
             <Receipt className="w-8 h-8" />
           </div>
           <div className="max-w-md mx-auto space-y-1">
-            <h3 className="text-base font-bold text-slate-900">No expenses recorded</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">No expenses recorded</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Log shared group expenses with equal, exact, percentage, or ratio splits.
             </p>
           </div>
@@ -181,33 +189,33 @@ export const ExpenseListPage = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3.5">
                     {/* Category Icon Pill */}
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0 border border-emerald-100">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0 border border-emerald-100 dark:border-emerald-800/60">
                       <Receipt className="w-5 h-5" />
                     </div>
 
                     <div className="space-y-0.5">
                       <div className="flex items-center space-x-2">
-                        <h4 className="text-sm font-bold text-slate-900">{expense.description}</h4>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">{expense.description}</h4>
                         <Badge variant="neutral">{expense.category?.name || 'General'}</Badge>
                       </div>
 
-                      <div className="flex items-center space-x-3 text-xs text-slate-500 font-medium">
-                        <span>Paid by <strong className="text-slate-700">{isPayer ? 'You' : `${expense.paid_by?.first_name}`}</strong></span>
+                      <div className="flex items-center space-x-3 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        <span>Paid by <strong className="text-slate-700 dark:text-slate-300">{isPayer ? 'You' : `${expense.paid_by?.first_name}`}</strong></span>
                         <span>•</span>
                         <span>{expense.date}</span>
                         <span>•</span>
-                        <span className="text-emerald-700 font-semibold">{expense.split_type} Split</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{expense.split_type} Split</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Amounts */}
                   <div className="text-right space-y-0.5">
-                    <p className="text-base font-extrabold text-slate-900 tracking-tight">
+                    <p className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
                       {formatINR(expense.total_amount)}
                     </p>
-                    <p className="text-xs font-semibold text-slate-500">
-                      Your share: <span className="text-slate-800">{formatINR(expense.my_share)}</span>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      Your share: <span className="text-slate-800 dark:text-slate-200">{formatINR(expense.my_share)}</span>
                     </p>
                   </div>
                 </div>
@@ -225,32 +233,32 @@ export const ExpenseListPage = () => {
           title={selectedExpense.description}
         >
           <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <p className="text-2xl font-bold text-slate-900">{formatINR(selectedExpense.total_amount)}</p>
-                <p className="text-xs text-slate-500">Paid by {selectedExpense.paid_by?.first_name} {selectedExpense.paid_by?.last_name} on {selectedExpense.date}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatINR(selectedExpense.total_amount)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Paid by {selectedExpense.paid_by?.first_name} {selectedExpense.paid_by?.last_name} on {selectedExpense.date}</p>
               </div>
               <Badge variant="brand">{selectedExpense.split_type} Split</Badge>
             </div>
 
             <div className="space-y-2">
-              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700">Split Breakdown</h5>
-              <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
+              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Split Breakdown</h5>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-48 overflow-y-auto">
                 {selectedExpense.splits?.map((s) => (
                   <div key={s.id} className="py-2 flex items-center justify-between text-xs">
                     <div className="flex items-center space-x-2">
-                      <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-[10px] flex items-center justify-center">
                         {getInitials(s.user?.first_name, s.user?.last_name)}
                       </div>
-                      <span className="font-semibold text-slate-800">{s.user?.first_name} {s.user?.last_name}</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{s.user?.first_name} {s.user?.last_name}</span>
                     </div>
-                    <span className="font-bold text-slate-900">{formatINR(s.amount)}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{formatINR(s.amount)}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+            <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 onClick={() => handleDeleteExpense(selectedExpense.id)}
                 className="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center"
@@ -268,6 +276,15 @@ export const ExpenseListPage = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onExpenseCreated={() => {
+          fetchExpenses();
+        }}
+      />
+
+      {/* Receipt Scan Modal */}
+      <ReceiptScanModal
+        isOpen={isScanModalOpen}
+        onClose={() => setIsScanModalOpen(false)}
+        onExpenseSaved={() => {
           fetchExpenses();
         }}
       />

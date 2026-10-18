@@ -77,7 +77,18 @@ export const MoneyAccountDetailPage = () => {
       const txData = await moneyAccountService.listTransactions(id, params);
       setTransactions(txData);
     } catch (err) {
-      const msg = err.response?.data?.detail || err.message || 'Failed to load account details.';
+      const errData = err.response?.data;
+      const invPending = errData?.invitation_pending || errData?.errors?.invitation_pending;
+      const invToken = errData?.invitation_token || errData?.errors?.invitation_token;
+      if (err.response?.status === 403 && (invPending || invToken)) {
+        if (invToken) {
+          navigate(`/money-accounts/invitation?token=${encodeURIComponent(invToken)}`, { replace: true });
+          return;
+        }
+        navigate(`/money-accounts/invitation?account_id=${encodeURIComponent(id)}`, { replace: true });
+        return;
+      }
+      const msg = errData?.detail || errData?.errors?.detail || err.message || 'Failed to load account details.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -179,16 +190,17 @@ export const MoneyAccountDetailPage = () => {
       </div>
 
       {/* Account Info Header */}
-      <Card className="p-5 sm:p-6 bg-white space-y-4">
+      {/* Account Info Header */}
+      <Card className="p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{account.title}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{account.title}</h1>
               {getStatusBadge(account.status)}
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Managed by <span className="font-semibold text-slate-800">{account.manager?.first_name || account.manager?.username}</span> for{' '}
-              <span className="font-semibold text-slate-800">{account.owner_name}</span> ({account.owner_email})
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Managed by <span className="font-semibold text-slate-800 dark:text-slate-200">{account.manager?.first_name || account.manager?.username}</span> for{' '}
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{account.owner_name}</span> ({account.owner_email})
             </p>
           </div>
 
@@ -223,34 +235,34 @@ export const MoneyAccountDetailPage = () => {
         </div>
 
         {/* Summary Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
-          <div className="p-3.5 bg-emerald-50/60 border border-emerald-100 rounded-xl">
-            <span className="text-[11px] font-semibold text-emerald-700 block">Total Money Received</span>
-            <span className="text-base sm:text-xl font-bold text-emerald-800">{formatCurrency(totalDeposits)}</span>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="p-3.5 bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800 rounded-xl">
+            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 block">Total Money Received</span>
+            <span className="text-base sm:text-xl font-bold text-emerald-800 dark:text-emerald-300">{formatCurrency(totalDeposits)}</span>
           </div>
 
-          <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl">
-            <span className="text-[11px] font-semibold text-slate-500 block">Total Spent</span>
-            <span className="text-base sm:text-xl font-bold text-slate-800">{formatCurrency(totalExpenses)}</span>
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 rounded-xl">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block">Total Spent</span>
+            <span className="text-base sm:text-xl font-bold text-slate-800 dark:text-slate-100">{formatCurrency(totalExpenses)}</span>
           </div>
 
-          <div className="p-3.5 bg-amber-50/60 border border-amber-100 rounded-xl">
-            <span className="text-[11px] font-semibold text-amber-700 block">Total Returned to Owner</span>
-            <span className="text-base sm:text-xl font-bold text-amber-800">{formatCurrency(totalRefunds)}</span>
+          <div className="p-3.5 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800 rounded-xl">
+            <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 block">Total Returned to Owner</span>
+            <span className="text-base sm:text-xl font-bold text-amber-800 dark:text-amber-300">{formatCurrency(totalRefunds)}</span>
           </div>
 
-          <div className="p-3.5 bg-emerald-100/60 border border-emerald-300 rounded-xl">
-            <span className="text-[11px] font-bold text-emerald-800 block">Remaining Balance</span>
-            <span className="text-lg sm:text-2xl font-extrabold text-emerald-900">{formatCurrency(balance)}</span>
+          <div className="p-3.5 bg-emerald-100/60 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 rounded-xl">
+            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 block">Remaining Balance</span>
+            <span className="text-lg sm:text-2xl font-extrabold text-emerald-900 dark:text-emerald-200">{formatCurrency(balance)}</span>
           </div>
         </div>
       </Card>
 
       {/* Ledger Table Section */}
       <Card className="p-5 sm:p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-emerald-600" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             Transaction Ledger History
           </h2>
 
@@ -259,7 +271,7 @@ export const MoneyAccountDetailPage = () => {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none"
+              className="px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none"
             >
               <option value="">All Types</option>
               <option value="DEPOSIT">DEPOSIT</option>
@@ -268,7 +280,7 @@ export const MoneyAccountDetailPage = () => {
               <option value="ADJUSTMENT">ADJUSTMENT</option>
             </select>
 
-            <label className="inline-flex items-center text-xs font-medium text-slate-600 cursor-pointer mr-2">
+            <label className="inline-flex items-center text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer mr-2">
               <input
                 type="checkbox"
                 checked={showVoided}
@@ -292,7 +304,7 @@ export const MoneyAccountDetailPage = () => {
 
         {/* Empty Transactions */}
         {transactions.length === 0 && (
-          <div className="py-8 text-center text-slate-400 text-xs font-medium">
+          <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs font-medium">
             No transactions recorded in this ledger yet.
           </div>
         )}
@@ -300,8 +312,8 @@ export const MoneyAccountDetailPage = () => {
         {/* Transactions Table */}
         {transactions.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+            <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+              <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="px-3 py-2.5">Date</th>
                   <th className="px-3 py-2.5">Type</th>
@@ -312,27 +324,27 @@ export const MoneyAccountDetailPage = () => {
                   {isManager && !isClosed && <th className="px-3 py-2.5 text-center">Action</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {transactions.map((tx) => {
                   const hasReceipt = Boolean(tx.receipt_image_url || tx.receipt_url);
 
                   return (
                     <tr
                       key={tx.id}
-                      className={`hover:bg-slate-50/60 transition-colors ${
-                        tx.is_voided ? 'bg-slate-50/80 text-slate-400' : ''
+                      className={`hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors ${
+                        tx.is_voided ? 'bg-slate-50/80 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500' : ''
                       }`}
                     >
                       <td className="px-3 py-3 whitespace-nowrap font-medium">{formatDate(tx.date)}</td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         {getTypeBadge(tx.transaction_type)}
                         {tx.is_voided && (
-                          <span className="ml-1.5 inline-flex items-center text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">
+                          <span className="ml-1.5 inline-flex items-center text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded">
                             VOIDED
                           </span>
                         )}
                       </td>
-                      <td className={`px-3 py-3 font-medium ${tx.is_voided ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                      <td className={`px-3 py-3 font-medium ${tx.is_voided ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-white'}`}>
                         {tx.description}
                       </td>
 

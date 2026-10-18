@@ -1,3 +1,4 @@
+import logging
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,12 +10,17 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
+logger = logging.getLogger(__name__)
+
 from .serializers import (
     UserSerializer,
     RegisterSerializer,
     LoginSerializer,
     PasswordResetRequestSerializer,
-    PasswordResetConfirmSerializer
+    PasswordResetConfirmSerializer,
+    UpdateProfileSerializer,
+    ChangePasswordSerializer,
+    DeactivateAccountSerializer
 )
 
 User = get_user_model()
@@ -67,6 +73,49 @@ class CurrentUserView(APIView):
             "user": serializer.data
         }, status=status.HTTP_200_OK)
 
+    def patch(self, request):
+        serializer = UpdateProfileSerializer(request.user, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({
+                "message": "Profile updated successfully",
+                "user": UserSerializer(user).data
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        return self.patch(request)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            new_password = serializer.validated_data['new_password']
+            request.user.set_password(new_password)
+            request.user.save()
+            return Response({
+                "message": "Password changed successfully."
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeactivateAccountView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = DeactivateAccountSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            user = request.user
+            user.is_active = False
+            user.save()
+            return Response({
+                "message": "Account has been deactivated successfully."
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class PasswordResetRequestView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -94,6 +143,7 @@ class PasswordResetRequestView(APIView):
                 )
 
                 try:
+                    logger.info(f"Attempting to send password reset email for user ID {user.id}")
                     send_mail(
                         subject,
                         message,
@@ -101,8 +151,9 @@ class PasswordResetRequestView(APIView):
                         [user.email],
                         fail_silently=False,
                     )
+                    logger.info(f"Successfully sent password reset email for user ID {user.id}")
                 except Exception as e:
-                    print(f"Error sending password reset email: {e}")
+                    logger.error(f"Failed to send password reset email for user ID {user.id}: {e}")
 
             # Always return a safe generic message regardless of whether user exists
             return Response({

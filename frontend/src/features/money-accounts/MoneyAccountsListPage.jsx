@@ -63,13 +63,13 @@ export const MoneyAccountsListPage = () => {
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <BookOpen className="w-6 h-6 text-emerald-600" />
             Friend Ledgers / Money Accounts
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Track custodial funds, expenses, and returns held on behalf of friends.
           </p>
         </div>
@@ -81,13 +81,13 @@ export const MoneyAccountsListPage = () => {
       </div>
 
       {/* Tabs Header */}
-      <div className="flex space-x-2 border-b border-slate-200">
+      <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800">
         <button
           onClick={() => setActiveTab('managed')}
           className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === 'managed'
               ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
           }`}
         >
           <Shield className="w-4 h-4" />
@@ -99,7 +99,7 @@ export const MoneyAccountsListPage = () => {
           className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === 'owned'
               ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
           }`}
         >
           <Wallet className="w-4 h-4" />
@@ -111,7 +111,7 @@ export const MoneyAccountsListPage = () => {
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-44 bg-slate-100 rounded-2xl animate-pulse" />
+            <div key={i} className="h-44 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse" />
           ))}
         </div>
       )}
@@ -125,14 +125,14 @@ export const MoneyAccountsListPage = () => {
 
       {/* Empty State */}
       {!loading && !error && currentTabAccounts.length === 0 && (
-        <Card className="p-8 text-center space-y-3 bg-slate-50/50">
-          <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+        <Card className="p-8 text-center space-y-3 bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 mx-auto flex items-center justify-center">
             <BookOpen className="w-6 h-6" />
           </div>
-          <h3 className="text-base font-bold text-slate-800">
+          <h3 className="text-base font-bold text-slate-800 dark:text-white">
             {activeTab === 'managed' ? 'No Managed Accounts Yet' : 'No Money Currently Held For You'}
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
             {activeTab === 'managed'
               ? 'Create a money account when a friend gives you funds to hold or manage on their behalf.'
               : 'When a friend logs custodial money they manage for you, it will appear here in read-only mode.'}
@@ -159,40 +159,40 @@ export const MoneyAccountsListPage = () => {
               <Card
                 key={account.id}
                 onClick={() => navigate(`/money-accounts/${account.id}`)}
-                className="p-5 hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4"
+                className="p-5 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="text-base font-bold text-slate-900 truncate" title={account.title}>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white truncate" title={account.title}>
                       {account.title}
                     </h3>
                     {getStatusBadge(account.status)}
                   </div>
 
-                  <p className="text-xs font-medium text-slate-500 mb-4">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4">
                     {activeTab === 'managed' ? (
-                      <>Owner: <span className="text-slate-800 font-semibold">{account.owner_name}</span> ({account.owner_email})</>
+                      <>Owner: <span className="text-slate-800 dark:text-slate-200 font-semibold">{account.owner_name}</span> ({account.owner_email})</>
                     ) : (
-                      <>Managed By: <span className="text-slate-800 font-semibold">{account.manager?.first_name || account.manager?.username}</span></>
+                      <>Managed By: <span className="text-slate-800 dark:text-slate-200 font-semibold">{account.manager?.first_name || account.manager?.username}</span></>
                     )}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-xl mb-3 text-xs">
+                  <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl mb-3 text-xs">
                     <div>
                       <span className="text-slate-400 block text-[11px]">Total Received</span>
-                      <span className="font-bold text-emerald-600">{formatCurrency(totalDeposits)}</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(totalDeposits)}</span>
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[11px]">Total Spent</span>
-                      <span className="font-bold text-slate-700">{formatCurrency(totalExpenses)}</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{formatCurrency(totalExpenses)}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <div>
                     <span className="text-[11px] font-medium text-slate-400 block">Remaining Balance</span>
-                    <span className="text-lg font-extrabold text-emerald-600">{formatCurrency(balance)}</span>
+                    <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{formatCurrency(balance)}</span>
                   </div>
 
                   <div className="p-2 text-slate-400 hover:text-emerald-600 rounded-lg">

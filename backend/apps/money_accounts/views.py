@@ -4,6 +4,7 @@ import mimetypes
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.http import FileResponse, Http404, HttpResponse
+from django.utils import timezone
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import status, permissions, parsers
 from rest_framework.views import APIView
@@ -68,6 +69,18 @@ class MoneyAccountDetailView(APIView):
     def get_object(self, request, pk):
         account = get_object_or_404(MoneyAccount, id=pk)
         if account.manager != request.user and account.owner != request.user:
+            pending_inv = AccountInvitation.objects.filter(
+                account=account,
+                recipient_email__iexact=request.user.email,
+                status='PENDING'
+            ).order_by('-created_at').first()
+            if pending_inv and pending_inv.expires_at > timezone.now():
+                raise PermissionDenied({
+                    "detail": "You have a pending invitation to this money account.",
+                    "invitation_pending": True,
+                    "invitation_token": pending_inv.token,
+                    "account_title": account.title,
+                })
             raise PermissionDenied("You do not have permission to view this money account.")
         return account
 
@@ -271,6 +284,45 @@ class InviteOwnerView(APIView):
 class RespondInvitationView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def get(self, request, token):
+        """Retrieve invitation details by token for authenticated user."""
+        try:
+            invitation = AccountInvitation.objects.select_related('account', 'sender').get(token=token)
+        except AccountInvitation.DoesNotExist:
+            raise Http404("Invitation not found.")
+
+        is_recipient = request.user.email.lower() == invitation.recipient_email.lower()
+        is_sender = request.user == invitation.sender
+        if not is_recipient and not is_sender:
+            raise PermissionDenied("You do not have permission to view this invitation.")
+
+        if invitation.status == 'PENDING' and invitation.expires_at <= timezone.now():
+            invitation.status = 'EXPIRED'
+            invitation.save()
+
+        sender_name = invitation.sender.first_name or invitation.sender.username or invitation.sender.email
+        return Response({
+            'id': str(invitation.id),
+            'token': invitation.token,
+            'status': invitation.status,
+            'recipient_email': invitation.recipient_email,
+            'created_at': invitation.created_at,
+            'expires_at': invitation.expires_at,
+            'is_expired': invitation.status == 'EXPIRED' or invitation.expires_at <= timezone.now(),
+            'sender': {
+                'id': str(invitation.sender.id),
+                'name': sender_name,
+                'email': invitation.sender.email
+            },
+            'account': {
+                'id': str(invitation.account.id),
+                'title': invitation.account.title,
+                'currency': invitation.account.currency,
+                'owner_name': invitation.account.owner_name,
+                'notes': invitation.account.notes
+            }
+        }, status=status.HTTP_200_OK)
+
     def post(self, request, token):
         """Accept or reject an invitation using token."""
         serializer = RespondInvitationSerializer(data=request.data)
@@ -289,6 +341,48 @@ class RespondInvitationView(APIView):
             return Response(res_serializer.data, status=status.HTTP_200_OK)
         except DjangoValidationError as e:
             raise DRFValidationError(e.message if hasattr(e, 'message') else str(e))
+
+
+class AccountPendingInvitationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        """Retrieve the pending invitation for the authenticated user for account pk."""
+        account = get_object_or_404(MoneyAccount, id=pk)
+        invitation = AccountInvitation.objects.select_related('account', 'sender').filter(
+            account=account,
+            recipient_email__iexact=request.user.email
+        ).order_by('-created_at').first()
+
+        if not invitation:
+            raise Http404("No invitation found for your account on this ledger.")
+
+        if invitation.status == 'PENDING' and invitation.expires_at <= timezone.now():
+            invitation.status = 'EXPIRED'
+            invitation.save()
+
+        sender_name = invitation.sender.first_name or invitation.sender.username or invitation.sender.email
+        return Response({
+            'id': str(invitation.id),
+            'token': invitation.token,
+            'status': invitation.status,
+            'recipient_email': invitation.recipient_email,
+            'created_at': invitation.created_at,
+            'expires_at': invitation.expires_at,
+            'is_expired': invitation.status == 'EXPIRED' or invitation.expires_at <= timezone.now(),
+            'sender': {
+                'id': str(invitation.sender.id),
+                'name': sender_name,
+                'email': invitation.sender.email
+            },
+            'account': {
+                'id': str(invitation.account.id),
+                'title': invitation.account.title,
+                'currency': invitation.account.currency,
+                'owner_name': invitation.account.owner_name,
+                'notes': invitation.account.notes
+            }
+        }, status=status.HTTP_200_OK)
 
 
 class CloseAccountView(APIView):

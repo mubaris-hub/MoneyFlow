@@ -11,6 +11,12 @@ class User(AbstractUser):
     last_name = models.CharField(max_length=150, blank=True, default='')
     avatar_url = models.URLField(max_length=500, blank=True, null=True)
     default_currency = models.CharField(max_length=3, default='INR')
+    date_format = models.CharField(max_length=20, default='YYYY-MM-DD')
+    notify_email = models.BooleanField(default=True)
+    notify_in_app = models.BooleanField(default=True)
+    notify_on_expenses = models.BooleanField(default=True)
+    notify_on_settlements = models.BooleanField(default=True)
+    notify_on_friend_ledgers = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

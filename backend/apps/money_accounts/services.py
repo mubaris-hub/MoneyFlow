@@ -391,6 +391,7 @@ class MoneyAccountService:
                         title='Money Account Invitation',
                         message=f"{sender_name} invited you to view the Money Account '{account.title}'.",
                         money_account=account,
+                        invitation=invitation,
                         actor=sender
                     )
             except Exception:

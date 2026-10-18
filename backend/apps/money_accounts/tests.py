@@ -7,7 +7,7 @@ from django.db import OperationalError
 from django.utils import timezone
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 
 from apps.money_accounts.models import (
@@ -778,3 +778,159 @@ class MoneyAccountReceiptTests(TestCase):
 
         bal_after_remove = MoneyAccountService.calculate_balance(self.account)['balance']
         self.assertEqual(bal_after_remove, Decimal('4300.00'))
+
+
+class FriendLedgerInvitationFlowTests(APITestCase):
+    def setUp(self):
+        self.user_a = User.objects.create_user(
+            username='user_a',
+            email='user_a@example.com',
+            password='Password123!',
+            first_name='Alice'
+        )
+        self.user_b = User.objects.create_user(
+            username='user_b',
+            email='user_b@example.com',
+            password='Password123!',
+            first_name='Bob'
+        )
+        self.user_c = User.objects.create_user(
+            username='user_c',
+            email='user_c@example.com',
+            password='Password123!',
+            first_name='Charlie'
+        )
+
+        self.account = MoneyAccountService.create_account(
+            manager=self.user_a,
+            title='Alice & Bob Vacation Fund',
+            owner_name='Bob',
+            owner_email='user_b@example.com',
+            currency='INR'
+        )
+
+    def test_full_invitation_flow_end_to_end(self):
+        from apps.notifications.models import Notification
+
+        # 1. User A invites User B
+        self.client.force_authenticate(user=self.user_a)
+        invite_url = reverse('money_account_invite', kwargs={'pk': self.account.id})
+        res_invite = self.client.post(invite_url)
+        self.assertEqual(res_invite.status_code, status.HTTP_201_CREATED)
+        token = res_invite.data['token']
+        self.assertTrue(bool(token))
+
+        # 2. User B receives the notification with token
+        self.client.force_authenticate(user=self.user_b)
+        notifs_res = self.client.get('/api/v1/notifications/')
+        self.assertEqual(notifs_res.status_code, status.HTTP_200_OK)
+        notifs = notifs_res.data['notifications']
+        self.assertEqual(len(notifs), 1)
+        self.assertEqual(notifs[0]['notification_type'], 'MONEY_ACCOUNT_INVITED')
+        self.assertEqual(notifs[0]['money_account_id'], str(self.account.id))
+        self.assertEqual(notifs[0]['invitation_token'], token)
+
+        # 3. User B retrieves invitation details by token without 403
+        inv_detail_url = reverse('money_account_invitation_detail', kwargs={'token': token})
+        res_detail = self.client.get(inv_detail_url)
+        self.assertEqual(res_detail.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_detail.data['account']['title'], 'Alice & Bob Vacation Fund')
+        self.assertEqual(res_detail.data['status'], 'PENDING')
+        self.assertEqual(res_detail.data['recipient_email'], 'user_b@example.com')
+        self.assertEqual(res_detail.data['sender']['email'], 'user_a@example.com')
+
+        # 3b. User B retrieves invitation details by account ID without 403
+        account_inv_url = reverse('money_account_pending_invitation', kwargs={'pk': self.account.id})
+        res_acc_inv = self.client.get(account_inv_url)
+        self.assertEqual(res_acc_inv.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_acc_inv.data['token'], token)
+
+        # 4. Unauthorized User C gets 403 on token and 404 on account invitation
+        self.client.force_authenticate(user=self.user_c)
+        res_unauth = self.client.get(inv_detail_url)
+        self.assertEqual(res_unauth.status_code, status.HTTP_403_FORBIDDEN)
+        res_unauth_acc = self.client.get(account_inv_url)
+        self.assertEqual(res_unauth_acc.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 5. User B accessing account detail directly before accepting receives structured 403
+        self.client.force_authenticate(user=self.user_b)
+        acc_detail_url = reverse('money_account_detail', kwargs={'pk': self.account.id})
+        res_acc_pre = self.client.get(acc_detail_url)
+        self.assertEqual(res_acc_pre.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(res_acc_pre.data['errors']['invitation_pending'])
+        self.assertEqual(res_acc_pre.data['errors']['invitation_token'], token)
+
+        # 6. User B accepts the invitation
+        respond_url = reverse('money_account_invitation_respond', kwargs={'token': token})
+        res_accept = self.client.post(respond_url, {'action': 'ACCEPT'}, format='json')
+        self.assertEqual(res_accept.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_accept.data['status'], 'ACTIVE')
+
+        # 7. User B cannot accept twice
+        res_accept_again = self.client.post(respond_url, {'action': 'ACCEPT'}, format='json')
+        self.assertEqual(res_accept_again.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 8. Both users now have access according to their roles
+        # User A (Manager) can read and write
+        self.client.force_authenticate(user=self.user_a)
+        res_a_acc = self.client.get(acc_detail_url)
+        self.assertEqual(res_a_acc.status_code, status.HTTP_200_OK)
+
+        tx_url = reverse('money_account_transaction_list_create', kwargs={'pk': self.account.id})
+        res_tx = self.client.post(tx_url, {
+            'transaction_type': 'DEPOSIT',
+            'amount': '2500.00',
+            'description': 'Initial Vacation Deposit'
+        }, format='json')
+        self.assertEqual(res_tx.status_code, status.HTTP_201_CREATED)
+
+        # User B (Owner) can read
+        self.client.force_authenticate(user=self.user_b)
+        res_b_acc = self.client.get(acc_detail_url)
+        self.assertEqual(res_b_acc.status_code, status.HTTP_200_OK)
+        res_b_txs = self.client.get(tx_url)
+        self.assertEqual(res_b_txs.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_b_txs.data), 1)
+
+        # User B (Owner) CANNOT add transactions (read-only owner role)
+        res_b_write = self.client.post(tx_url, {
+            'transaction_type': 'EXPENSE',
+            'amount': '500.00',
+            'description': 'Snacks'
+        }, format='json')
+        self.assertEqual(res_b_write.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Unauthorized User C CANNOT access the ledger
+        self.client.force_authenticate(user=self.user_c)
+        res_c_acc = self.client.get(acc_detail_url)
+        self.assertEqual(res_c_acc.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_expired_invitation_handling(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        from apps.money_accounts.models import AccountInvitation
+
+        # Manager invites User B
+        self.client.force_authenticate(user=self.user_a)
+        invite_url = reverse('money_account_invite', kwargs={'pk': self.account.id})
+        res_invite = self.client.post(invite_url)
+        token = res_invite.data['token']
+
+        # Artificially expire the invitation
+        inv = AccountInvitation.objects.get(token=token)
+        inv.expires_at = timezone.now() - timedelta(hours=1)
+        inv.save()
+
+        # User B tries to view invitation
+        self.client.force_authenticate(user=self.user_b)
+        inv_detail_url = reverse('money_account_invitation_detail', kwargs={'token': token})
+        res_detail = self.client.get(inv_detail_url)
+        self.assertEqual(res_detail.status_code, status.HTTP_200_OK)
+        self.assertTrue(res_detail.data['is_expired'])
+        self.assertEqual(res_detail.data['status'], 'EXPIRED')
+
+        # User B tries to accept expired invitation
+        respond_url = reverse('money_account_invitation_respond', kwargs={'token': token})
+        res_accept = self.client.post(respond_url, {'action': 'ACCEPT'}, format='json')
+        self.assertEqual(res_accept.status_code, status.HTTP_400_BAD_REQUEST)
+

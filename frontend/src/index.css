@@ -3,9 +3,17 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html.dark,
+  html[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
   body {
-    background-color: #f8fafc;
-    color: #0f172a;
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen font-sans antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
@@ -27,4 +35,12 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }

@@ -25,15 +25,15 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md' 
       {/* Dialog container */}
       <div className="flex min-h-full items-center justify-center p-4 text-center">
         <div
-          className={`w-full ${maxWidth} transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all border border-slate-200/80 relative`}
+          className={`w-full ${maxWidth} transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-6 text-left align-middle shadow-xl transition-all border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 relative`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-            <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+          <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h3>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

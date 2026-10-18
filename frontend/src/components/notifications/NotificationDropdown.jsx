@@ -74,6 +74,18 @@ export const NotificationDropdown = () => {
       await handleMarkAsRead(notif.id);
     }
     setIsOpen(false);
+
+    if (notif.notification_type === 'MONEY_ACCOUNT_INVITED') {
+      if (notif.invitation_token) {
+        navigate(`/money-accounts/invitation?token=${encodeURIComponent(notif.invitation_token)}`);
+        return;
+      }
+      if (notif.money_account_id) {
+        navigate(`/money-accounts/invitation?account_id=${encodeURIComponent(notif.money_account_id)}`);
+        return;
+      }
+    }
+
     if (notif.money_account_id) {
       navigate(`/money-accounts/${notif.money_account_id}`);
     }
@@ -84,7 +96,7 @@ export const NotificationDropdown = () => {
       {/* Bell Trigger Button */}
       <button
         onClick={handleToggle}
-        className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg relative transition-colors"
+        className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg relative transition-colors"
         title="Notifications"
         aria-label="Notifications"
         type="button"
@@ -100,13 +112,13 @@ export const NotificationDropdown = () => {
 
       {/* Notification Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200/80 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           {/* Header */}
-          <div className="p-3.5 px-4 bg-slate-50/80 border-b border-slate-200/80 flex items-center justify-between">
+          <div className="p-3.5 px-4 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Notifications</h3>
               {unreadCount > 0 && (
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
                   {unreadCount} new
                 </span>
               )}
@@ -125,9 +137,9 @@ export const NotificationDropdown = () => {
           </div>
 
           {/* List Content */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
             {notifications.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs">
+              <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" />
                 No notifications yet.
               </div>
@@ -136,18 +148,18 @@ export const NotificationDropdown = () => {
                 <div
                   key={notif.id}
                   onClick={() => handleNotificationClick(notif)}
-                  className={`p-3.5 hover:bg-slate-50 transition-colors cursor-pointer flex gap-3 ${
-                    !notif.is_read ? 'bg-emerald-50/30' : ''
+                  className={`p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer flex gap-3 ${
+                    !notif.is_read ? 'bg-emerald-50/30 dark:bg-emerald-950/20' : ''
                   }`}
                 >
                   <div className="mt-0.5">
-                    <div className="p-2 rounded-xl bg-slate-100 text-slate-600">
-                      <BookOpen className="w-4 h-4 text-emerald-600" />
+                    <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className={`text-xs font-semibold truncate ${!notif.is_read ? 'text-slate-900 font-bold' : 'text-slate-700'}`}>
+                      <p className={`text-xs font-semibold truncate ${!notif.is_read ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-700 dark:text-slate-300'}`}>
                         {notif.title}
                       </p>
                       {!notif.is_read && (
@@ -155,14 +167,14 @@ export const NotificationDropdown = () => {
                           onClick={(e) => handleMarkAsRead(notif.id, e)}
                           title="Mark as read"
                           type="button"
-                          className="text-slate-400 hover:text-emerald-600 p-0.5 rounded"
+                          className="text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-0.5 rounded"
                         >
                           <Check className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-slate-600 line-clamp-2 mt-0.5">{notif.message}</p>
-                    <span className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mt-0.5">{notif.message}</p>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {formatDate(notif.created_at)}
                     </span>

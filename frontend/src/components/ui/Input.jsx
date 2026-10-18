@@ -21,13 +21,13 @@ export const Input = React.forwardRef(({
   return (
     <div className="w-full space-y-1.5">
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
           {label}
         </label>
       )}
       <div className="relative rounded-lg">
         {Icon && (
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
             <Icon className="w-4 h-4" />
           </div>
         )}
@@ -35,14 +35,14 @@ export const Input = React.forwardRef(({
           ref={ref}
           id={inputId}
           type={effectiveType}
-          className={`w-full text-sm font-normal text-slate-900 bg-white border rounded-lg px-3.5 py-2.5 transition-all duration-150 placeholder:text-slate-400 focus:outline-none ${
+          className={`w-full text-sm font-normal text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800/90 border rounded-lg px-3.5 py-2.5 transition-all duration-150 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden ${
             Icon ? 'pl-10' : ''
           } ${
             isPasswordInput ? 'pr-10' : ''
           } ${
             error
               ? 'border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10'
-              : 'border-slate-300 hover:border-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/15'
+              : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/15'
           } ${className}`}
           {...props}
         />

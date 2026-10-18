@@ -10,9 +10,12 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'email', 'username', 'first_name', 'last_name',
-            'avatar_url', 'default_currency', 'created_at', 'updated_at'
+            'avatar_url', 'default_currency', 'date_format',
+            'notify_email', 'notify_in_app', 'notify_on_expenses',
+            'notify_on_settlements', 'notify_on_friend_ledgers',
+            'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'email', 'created_at', 'updated_at']
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -85,4 +88,64 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         if attrs['new_password'] != attrs['confirm_password']:
             raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
         return attrs
+
+
+class UpdateProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'first_name', 'last_name', 'username', 'avatar_url',
+            'default_currency', 'date_format',
+            'notify_email', 'notify_in_app', 'notify_on_expenses',
+            'notify_on_settlements', 'notify_on_friend_ledgers'
+        ]
+        extra_kwargs = {
+            'first_name': {'required': False},
+            'username': {'required': False},
+        }
+
+    def validate_username(self, value):
+        user = self.context.get('request').user
+        if User.objects.filter(username__iexact=value).exclude(pk=user.pk).exists():
+            raise serializers.ValidationError("This username is already taken.")
+        return value
+
+    def validate_default_currency(self, value):
+        allowed = ['INR', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'AED', 'SGD']
+        if value.upper() not in allowed:
+            raise serializers.ValidationError(f"Currency '{value}' is not supported. Supported: {', '.join(allowed)}")
+        return value.upper()
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    confirm_password = serializers.CharField(write_only=True, required=True)
+
+    def validate_current_password(self, value):
+        user = self.context.get('request').user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Current password is incorrect.")
+        return value
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "New passwords do not match."})
+        if attrs.get('current_password') == attrs.get('new_password'):
+            raise serializers.ValidationError({"new_password": "New password cannot be the same as your current password."})
+        return attrs
+
+
+class DeactivateAccountSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, required=True)
+    confirmation = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        user = self.context.get('request').user
+        if not user.check_password(attrs['password']):
+            raise serializers.ValidationError({"password": "Password is incorrect."})
+        if attrs['confirmation'].strip().upper() != "DELETE":
+            raise serializers.ValidationError({"confirmation": "Please type 'DELETE' to confirm account deactivation."})
+        return attrs
+
 

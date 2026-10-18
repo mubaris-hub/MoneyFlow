@@ -73,6 +73,16 @@ export const moneyAccountService = {
     return response.data;
   },
 
+  getInvitationDetails: async (token) => {
+    const response = await api.get(`/money-accounts/invitations/${token}/`);
+    return response.data;
+  },
+
+  getPendingInvitation: async (accountId) => {
+    const response = await api.get(`/money-accounts/${accountId}/invitation/`);
+    return response.data;
+  },
+
   respondInvitation: async (token, data) => {
     const response = await api.post(`/money-accounts/invitations/${token}/respond/`, data);
     return response.data;

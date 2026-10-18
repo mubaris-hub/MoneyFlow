@@ -177,13 +177,13 @@ export const CreateExpenseModal = ({ isOpen, onClose, initialGroupId, onExpenseC
         <div className="grid grid-cols-2 gap-3">
           {/* Group Selector */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Group <span className="text-rose-500">*</span>
             </label>
             <select
               value={selectedGroupId}
               onChange={(e) => setSelectedGroupId(e.target.value)}
-              className="w-full text-sm text-slate-900 bg-white border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium"
+              className="w-full text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium"
               required
             >
               {groups.map(g => (
@@ -196,14 +196,14 @@ export const CreateExpenseModal = ({ isOpen, onClose, initialGroupId, onExpenseC
 
           {/* Category Selector */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Category
             </label>
             <select
               name="category_id"
               value={formData.category_id}
               onChange={handleChange}
-              className="w-full text-sm text-slate-900 bg-white border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium"
+              className="w-full text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium"
             >
               {categories.map(c => (
                 <option key={c.id} value={c.id}>
@@ -217,14 +217,14 @@ export const CreateExpenseModal = ({ isOpen, onClose, initialGroupId, onExpenseC
         <div className="grid grid-cols-2 gap-3">
           {/* Paid By Selector */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Paid By
             </label>
             <select
               name="paid_by_id"
               value={formData.paid_by_id}
               onChange={handleChange}
-              className="w-full text-sm text-slate-900 bg-white border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium"
+              className="w-full text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-600 font-medium"
             >
               {groupMembers.map(m => (
                 <option key={m.user.id} value={m.user.id}>

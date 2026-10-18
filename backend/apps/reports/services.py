@@ -2,10 +2,11 @@ from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
-from apps.expenses.models import Expense, ExpenseSplit, Category
+from apps.expenses.models import Expense, ExpenseSplit, Category, DirectPayment, Settlement
 from apps.groups.models import Group
 from apps.money_accounts.models import MoneyAccount, AccountTransaction
 from apps.money_accounts.services import MoneyAccountService
+from apps.expenses.services import calculate_group_balances
 
 ZERO = Decimal('0.00')
 
@@ -40,6 +41,55 @@ class ReportService:
 
         total_personal_share = to_dec(splits.aggregate(val=Sum('amount'))['val'])
         total_paid_by_user = to_dec(paid_expenses.aggregate(val=Sum('total_amount'))['val'])
+        active_expenses_count = splits.filter(amount__gt=ZERO).count()
+
+        user_groups = Group.objects.filter(memberships__user=user)
+
+        # 1. Available Balance (Net balance across all groups user belongs to)
+        net_balance_sum = ZERO
+        outstanding_debt_sum = ZERO
+        for g in user_groups:
+            balances = calculate_group_balances(g)
+            user_bal = next((b for b in balances if b['user_id'] == user.id), None)
+            if user_bal:
+                net_balance_sum += user_bal['net_balance']
+                if user_bal['net_balance'] < ZERO:
+                    outstanding_debt_sum += abs(user_bal['net_balance'])
+
+        # 2. Money Received (Direct payments received + Completed settlements received)
+        dp_received_qs = DirectPayment.objects.filter(group__in=user_groups, receiver=user)
+        st_received_qs = Settlement.objects.filter(group__in=user_groups, receiver=user, status='COMPLETED')
+
+        if start_date:
+            dp_received_qs = dp_received_qs.filter(date__gte=start_date)
+            st_received_qs = st_received_qs.filter(date__gte=start_date)
+        if end_date:
+            dp_received_qs = dp_received_qs.filter(date__lte=end_date)
+            st_received_qs = st_received_qs.filter(date__lte=end_date)
+
+        dp_total = to_dec(dp_received_qs.aggregate(val=Sum('amount'))['val'])
+        dp_count = dp_received_qs.count()
+
+        st_total = to_dec(st_received_qs.aggregate(val=Sum('amount'))['val'])
+        st_count = st_received_qs.count()
+
+        money_received = dp_total + st_total
+        received_count = dp_count + st_count
+
+        # 3. Pending Settlements (Outstanding amount using balance rules + pending requests)
+        pending_user_settlements = Settlement.objects.filter(
+            group__in=user_groups,
+            status='PENDING'
+        ).filter(Q(sender=user) | Q(receiver=user)).distinct()
+
+        if start_date:
+            pending_user_settlements = pending_user_settlements.filter(date__gte=start_date)
+        if end_date:
+            pending_user_settlements = pending_user_settlements.filter(date__lte=end_date)
+
+        pending_count = pending_user_settlements.count()
+        pending_req_sum = to_dec(pending_user_settlements.aggregate(val=Sum('amount'))['val'])
+        pending_amount = max(outstanding_debt_sum, pending_req_sum)
 
         managed_accs = MoneyAccount.objects.filter(manager=user)
         held_accs = MoneyAccount.objects.filter(owner=user)
@@ -100,6 +150,13 @@ class ReportService:
             })
 
         return {
+            'available_balance': f"{net_balance_sum:.2f}",
+            'money_received': f"{money_received:.2f}",
+            'received_count': received_count,
+            'total_expenses_share': f"{total_personal_share:.2f}",
+            'expenses_count': active_expenses_count,
+            'pending_settlements_amount': f"{pending_amount:.2f}",
+            'pending_settlements_count': pending_count,
             'personal_expenses_share': f"{total_personal_share:.2f}",
             'total_paid_out_of_pocket': f"{total_paid_by_user:.2f}",
             'friend_ledger_summary': {

@@ -140,7 +140,7 @@ export const AddTransactionModal = ({ isOpen, onClose, accountId, defaultType = 
 
         {/* Transaction Type Selector */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Transaction Type</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Transaction Type</label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
               { type: 'DEPOSIT', label: '+ Deposit' },
@@ -152,10 +152,10 @@ export const AddTransactionModal = ({ isOpen, onClose, accountId, defaultType = 
                 key={item.type}
                 type="button"
                 onClick={() => setTransactionType(item.type)}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors cursor-pointer ${
                   transactionType === item.type
                     ? 'bg-emerald-600 text-white border-emerald-600'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 {item.label}
@@ -166,7 +166,7 @@ export const AddTransactionModal = ({ isOpen, onClose, accountId, defaultType = 
 
         {/* Amount Field */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Amount (₹) *</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Amount (₹) *</label>
           <Input
             type="number"
             step="0.01"
@@ -182,9 +182,9 @@ export const AddTransactionModal = ({ isOpen, onClose, accountId, defaultType = 
         {/* Adjustment Direction Toggle */}
         {transactionType === 'ADJUSTMENT' && (
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Adjustment Direction</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Adjustment Direction</label>
             <div className="flex space-x-3">
-              <label className="flex items-center text-xs font-medium text-slate-700 cursor-pointer">
+              <label className="flex items-center text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
                 <input
                   type="radio"
                   name="adjustment_direction"
@@ -195,7 +195,7 @@ export const AddTransactionModal = ({ isOpen, onClose, accountId, defaultType = 
                 />
                 <span className="ml-1.5">+ Increase Balance</span>
               </label>
-              <label className="flex items-center text-xs font-medium text-slate-700 cursor-pointer">
+              <label className="flex items-center text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
                 <input
                   type="radio"
                   name="adjustment_direction"
@@ -212,7 +212,7 @@ export const AddTransactionModal = ({ isOpen, onClose, accountId, defaultType = 
 
         {/* Description */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Description *</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Description *</label>
           <Input
             name="description"
             placeholder={
@@ -232,13 +232,13 @@ export const AddTransactionModal = ({ isOpen, onClose, accountId, defaultType = 
 
         {/* Date */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Date</label>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Date</label>
           <Input type="date" name="date" value={formData.date} onChange={handleChange} required />
         </div>
 
         {/* Notes / Mandatory Reason for Adjustment */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
             {transactionType === 'ADJUSTMENT' ? 'Adjustment Reason (Mandatory) *' : 'Notes'}
           </label>
           <textarea
@@ -252,7 +252,7 @@ export const AddTransactionModal = ({ isOpen, onClose, accountId, defaultType = 
             value={formData.notes}
             onChange={handleChange}
             required={transactionType === 'ADJUSTMENT'}
-            className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 

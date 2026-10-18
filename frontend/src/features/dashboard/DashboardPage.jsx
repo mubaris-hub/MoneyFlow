@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import useAuth from '../../hooks/useAuth';
 import reportService from '../../services/report.service';
 import groupService from '../../services/group.service';
@@ -8,8 +9,10 @@ import settlementService from '../../services/settlement.service';
 import StatCard from '../../components/common/StatCard';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
+import Skeleton from '../../components/ui/Skeleton';
 import CreateGroupModal from '../groups/CreateGroupModal';
 import { formatINR } from '../../utils/formatters';
+import { staggerContainer, staggerItem } from '../../utils/animations';
 import {
   Wallet,
   ArrowDownLeft,
@@ -215,64 +218,95 @@ export const DashboardPage = () => {
       )}
 
       {/* Summary Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <StatCard
-          title="Available Balance"
-          value={formatINR(stats.netBalance)}
-          subtitle="Net balance across all groups"
-          icon={Wallet}
-          iconBg="bg-emerald-100 text-emerald-700"
-          trend={
-            <span className={`inline-flex items-center ${stats.netBalance > 0 ? 'text-emerald-600 font-semibold' : stats.netBalance < 0 ? 'text-rose-600 font-semibold' : 'text-slate-500'}`}>
-              <ArrowUpRight className="w-3.5 h-3.5 mr-1 text-slate-400" />
-              {stats.netBalance > 0
-                ? `Gets back ${formatINR(stats.netBalance)}`
-                : stats.netBalance < 0
-                ? `Owes ${formatINR(Math.abs(stats.netBalance))}`
-                : 'Fully settled up'}
-            </span>
-          }
-        />
+      {stats.loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              className="p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3"
+            >
+              <div className="flex justify-between items-center">
+                <Skeleton variant="text" className="w-24 h-4" />
+                <Skeleton variant="circle" className="w-9 h-9" />
+              </div>
+              <Skeleton variant="text" className="w-32 h-7" />
+              <Skeleton variant="text" className="w-36 h-3.5" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5"
+        >
+          <motion.div variants={staggerItem}>
+            <StatCard
+              title="Available Balance"
+              value={formatINR(stats.netBalance)}
+              subtitle="Net balance across all groups"
+              icon={Wallet}
+              iconBg="bg-emerald-100 text-emerald-700"
+              trend={
+                <span className={`inline-flex items-center ${stats.netBalance > 0 ? 'text-emerald-600 font-semibold' : stats.netBalance < 0 ? 'text-rose-600 font-semibold' : 'text-slate-500'}`}>
+                  <ArrowUpRight className="w-3.5 h-3.5 mr-1 text-slate-400" />
+                  {stats.netBalance > 0
+                    ? `Gets back ${formatINR(stats.netBalance)}`
+                    : stats.netBalance < 0
+                    ? `Owes ${formatINR(Math.abs(stats.netBalance))}`
+                    : 'Fully settled up'}
+                </span>
+              }
+            />
+          </motion.div>
 
-        <StatCard
-          title="Money Received"
-          value={formatINR(stats.moneyReceived)}
-          subtitle="Total repayments received"
-          icon={ArrowDownLeft}
-          iconBg="bg-teal-100 text-teal-700"
-          trend={
-            <span className="inline-flex items-center text-slate-500">
-              {stats.receivedCount} direct transfers
-            </span>
-          }
-        />
+          <motion.div variants={staggerItem}>
+            <StatCard
+              title="Money Received"
+              value={formatINR(stats.moneyReceived)}
+              subtitle="Total repayments received"
+              icon={ArrowDownLeft}
+              iconBg="bg-teal-100 text-teal-700"
+              trend={
+                <span className="inline-flex items-center text-slate-500">
+                  {stats.receivedCount} direct transfers
+                </span>
+              }
+            />
+          </motion.div>
 
-        <StatCard
-          title="Total Expenses"
-          value={formatINR(stats.totalExpensesShare)}
-          subtitle="Your total shared share"
-          icon={Receipt}
-          iconBg="bg-sky-100 text-sky-700"
-          trend={
-            <span className="inline-flex items-center text-slate-500">
-              {stats.expensesCount} active expenses
-            </span>
-          }
-        />
+          <motion.div variants={staggerItem}>
+            <StatCard
+              title="Total Expenses"
+              value={formatINR(stats.totalExpensesShare)}
+              subtitle="Your total shared share"
+              icon={Receipt}
+              iconBg="bg-sky-100 text-sky-700"
+              trend={
+                <span className="inline-flex items-center text-slate-500">
+                  {stats.expensesCount} active expenses
+                </span>
+              }
+            />
+          </motion.div>
 
-        <StatCard
-          title="Pending Settlements"
-          value={formatINR(stats.pendingSettlementsAmount)}
-          subtitle="Settlements to be cleared"
-          icon={HandCoins}
-          iconBg="bg-amber-100 text-amber-700"
-          trend={
-            <span className="inline-flex items-center text-slate-500">
-              {stats.pendingSettlementsCount} pending requests
-            </span>
-          }
-        />
-      </div>
+          <motion.div variants={staggerItem}>
+            <StatCard
+              title="Pending Settlements"
+              value={formatINR(stats.pendingSettlementsAmount)}
+              subtitle="Settlements to be cleared"
+              icon={HandCoins}
+              iconBg="bg-amber-100 text-amber-700"
+              trend={
+                <span className="inline-flex items-center text-slate-500">
+                  {stats.pendingSettlementsCount} pending requests
+                </span>
+              }
+            />
+          </motion.div>
+        </motion.div>
+      )}
 
       {/* Overview Dashboard Shell & Next Steps Banner */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

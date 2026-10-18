@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import useAuth from '../../hooks/useAuth';
 import useTheme from '../../hooks/useTheme';
+import useToast from '../../hooks/useToast';
 import authService from '../../services/auth.service';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -39,6 +41,7 @@ import {
 export const SettingsPage = () => {
   const { user, updateUser, logout } = useAuth();
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const toast = useToast();
 
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -114,6 +117,7 @@ export const SettingsPage = () => {
   // Helper to extract errors from API
   const handleApiError = (err, defaultMessage) => {
     const data = err.response?.data;
+    let computedError = defaultMessage;
     if (data && typeof data === 'object') {
       const fieldErr = {};
       Object.keys(data).forEach((key) => {
@@ -122,10 +126,12 @@ export const SettingsPage = () => {
       });
       setFieldErrors(fieldErr);
       const firstVal = Object.values(fieldErr)[0];
-      setErrorMsg(typeof firstVal === 'string' ? firstVal : defaultMessage);
+      computedError = typeof firstVal === 'string' ? firstVal : defaultMessage;
+      setErrorMsg(computedError);
     } else {
       setErrorMsg(defaultMessage);
     }
+    toast.error(computedError);
   };
 
   // 1. Save Profile
@@ -146,6 +152,7 @@ export const SettingsPage = () => {
         updateUser(res.user);
       }
       setSuccessMsg('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     } catch (err) {
       handleApiError(err, 'Failed to update profile. Please try again.');
     } finally {
@@ -164,6 +171,7 @@ export const SettingsPage = () => {
     if (newPassword !== confirmPassword) {
       setErrorMsg('New passwords do not match.');
       setFieldErrors({ confirm_password: 'Passwords do not match.' });
+      toast.error('New passwords do not match.');
       setSubmitting(false);
       return;
     }
@@ -171,6 +179,7 @@ export const SettingsPage = () => {
     if (newPassword.length < 8) {
       setErrorMsg('New password must be at least 8 characters long.');
       setFieldErrors({ new_password: 'Password must be at least 8 characters long.' });
+      toast.error('Password must be at least 8 characters long.');
       setSubmitting(false);
       return;
     }
@@ -182,6 +191,7 @@ export const SettingsPage = () => {
         confirm_password: confirmPassword,
       });
       setSuccessMsg('Password changed successfully! Keep your new credentials secure.');
+      toast.success('Password changed successfully!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -209,6 +219,7 @@ export const SettingsPage = () => {
         updateUser(res.user);
       }
       setSuccessMsg('Application preferences saved successfully!');
+      toast.success('Application preferences saved successfully!');
     } catch (err) {
       handleApiError(err, 'Failed to save preferences.');
     } finally {
@@ -236,6 +247,7 @@ export const SettingsPage = () => {
         updateUser(res.user);
       }
       setSuccessMsg('Notification preferences updated successfully!');
+      toast.success('Notification preferences updated successfully!');
     } catch (err) {
       handleApiError(err, 'Failed to update notification preferences.');
     } finally {
@@ -302,11 +314,14 @@ export const SettingsPage = () => {
           const isSelected = theme === opt.id;
           const Icon = opt.icon;
           return (
-            <button
+            <motion.button
               type="button"
               key={opt.id}
+              whileTap={{ scale: 0.98 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.15 }}
               onClick={() => setTheme(opt.id)}
-              className={`relative flex flex-col items-center text-center rounded-xl border p-5 transition-colors duration-150 cursor-pointer ${
+              className={`relative flex flex-col items-center text-center rounded-xl border p-5 transition-all duration-200 cursor-pointer ${
                 isSelected
                   ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20 shadow-xs'
                   : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700'
@@ -315,17 +330,22 @@ export const SettingsPage = () => {
               {/* Radio selection indicator positioned top-right */}
               <div className="absolute top-3.5 right-3.5">
                 {isSelected ? (
-                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <motion.span
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.18 }}
+                    className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs"
+                  >
                     <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                  </span>
+                  </motion.span>
                 ) : (
-                  <span className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                  <span className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-700 shrink-0 transition-colors" />
                 )}
               </div>
 
               {/* Centered Theme Icon */}
               <div
-                className={`p-3 rounded-xl border mb-3 transition-colors flex items-center justify-center ${
+                className={`p-3 rounded-xl border mb-3 transition-colors duration-200 flex items-center justify-center ${
                   isSelected
                     ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-700/80'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
@@ -343,7 +363,7 @@ export const SettingsPage = () => {
                   {opt.description}
                 </p>
               </div>
-            </button>
+            </motion.button>
           );
         })}
       </div>
@@ -542,7 +562,14 @@ export const SettingsPage = () => {
                 </button>
               </div>
               {fieldErrors.current_password && (
-                <p className="text-xs text-rose-600 mt-1">{fieldErrors.current_password}</p>
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.16 }}
+                  className="text-xs text-rose-600 mt-1"
+                >
+                  {fieldErrors.current_password}
+                </motion.p>
               )}
             </div>
 
@@ -566,7 +593,14 @@ export const SettingsPage = () => {
                 </button>
               </div>
               {fieldErrors.new_password && (
-                <p className="text-xs text-rose-600 mt-1">{fieldErrors.new_password}</p>
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.16 }}
+                  className="text-xs text-rose-600 mt-1"
+                >
+                  {fieldErrors.new_password}
+                </motion.p>
               )}
             </div>
 
@@ -590,7 +624,14 @@ export const SettingsPage = () => {
                 </button>
               </div>
               {fieldErrors.confirm_password && (
-                <p className="text-xs text-rose-600 mt-1">{fieldErrors.confirm_password}</p>
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.16 }}
+                  className="text-xs text-rose-600 mt-1"
+                >
+                  {fieldErrors.confirm_password}
+                </motion.p>
               )}
             </div>
 

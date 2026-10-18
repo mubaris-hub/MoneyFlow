@@ -7,6 +7,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Input from '../../components/ui/Input';
+import Skeleton from '../../components/ui/Skeleton';
 import TransactionDetailModal from './TransactionDetailModal';
 import { formatCurrency, formatDate, getInitials } from '../../utils/formatters';
 import {
@@ -427,9 +428,21 @@ export const TransactionsPage = () => {
       {/* Transactions Table & Cards */}
       <Card className="border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center space-y-3">
-            <RefreshCw className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-spin mx-auto" />
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Loading transactions history...</p>
+          <div className="p-6 space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-800/60 last:border-0">
+                <div className="flex items-center space-x-3 w-1/3">
+                  <Skeleton variant="circle" className="w-9 h-9 shrink-0" />
+                  <div className="space-y-1.5 w-full">
+                    <Skeleton variant="text" className="w-3/4 h-3.5" />
+                    <Skeleton variant="text" className="w-1/2 h-3" />
+                  </div>
+                </div>
+                <Skeleton variant="text" className="w-24 h-4 hidden md:block" />
+                <Skeleton variant="text" className="w-24 h-4 hidden md:block" />
+                <Skeleton variant="text" className="w-20 h-4" />
+              </div>
+            ))}
           </div>
         ) : transactions.length === 0 ? (
           <div className="p-12 text-center space-y-3">

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { Eye, EyeOff } from 'lucide-react';
 
 export const Input = React.forwardRef(({
@@ -63,7 +64,16 @@ export const Input = React.forwardRef(({
           </div>
         )}
       </div>
-      {error && <p className="text-xs text-rose-600 font-medium">{error}</p>}
+      {error && (
+        <motion.p
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+          className="text-xs text-rose-600 font-medium"
+        >
+          {error}
+        </motion.p>
+      )}
       {!error && helperText && <p className="text-xs text-slate-500">{helperText}</p>}
     </div>
   );

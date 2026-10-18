@@ -17,6 +17,8 @@ import {
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
+import Skeleton from '../../components/ui/Skeleton';
+import { motion } from 'motion/react';
 import reportService from '../../services/report.service';
 import groupService from '../../services/group.service';
 import moneyAccountService from '../../services/moneyAccount.service';
@@ -242,9 +244,29 @@ export const ReportsPage = () => {
 
       {/* Loading State */}
       {loading && (
-        <div className="py-12 text-center space-y-3">
-          <div className="w-8 h-8 border-3 border-emerald-600 dark:border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Calculating analytics & aggregations...</p>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3"
+              >
+                <Skeleton variant="text" className="w-20 h-3" />
+                <Skeleton variant="text" className="w-28 h-6" />
+                <Skeleton variant="text" className="w-32 h-3" />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
+              <Skeleton variant="text" className="w-40 h-5" />
+              <Skeleton variant="card" className="w-full h-64" />
+            </div>
+            <div className="p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
+              <Skeleton variant="text" className="w-40 h-5" />
+              <Skeleton variant="card" className="w-full h-64" />
+            </div>
+          </div>
         </div>
       )}
 

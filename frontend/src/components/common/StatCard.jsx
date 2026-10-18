@@ -3,7 +3,7 @@ import Card from '../ui/Card';
 
 export const StatCard = ({ title, value, icon: Icon, trend, subtitle, iconBg = 'bg-emerald-50 text-emerald-600' }) => {
   return (
-    <Card className="relative overflow-hidden border border-slate-200/80 dark:border-slate-800">
+    <Card hover={true} className="relative overflow-hidden border border-slate-200/80 dark:border-slate-800">
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{title}</p>

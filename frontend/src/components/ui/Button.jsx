@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 
 export const Button = ({
@@ -12,7 +13,7 @@ export const Button = ({
   onClick,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed rounded-lg shadow-sm';
+  const baseStyles = 'inline-flex items-center justify-center font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed rounded-lg shadow-xs cursor-pointer select-none';
 
   const variants = {
     primary: 'bg-emerald-600 hover:bg-emerald-700 text-white focus:ring-4 focus:ring-emerald-500/20 active:bg-emerald-800',
@@ -28,12 +29,16 @@ export const Button = ({
     lg: 'px-5 py-3 text-base',
   };
 
+  const isDisabled = disabled || isLoading;
+
   return (
-    <button
+    <motion.button
       type={type}
-      disabled={disabled || isLoading}
+      disabled={isDisabled}
       onClick={onClick}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+      whileTap={isDisabled ? undefined : { scale: 0.97 }}
+      transition={{ duration: 0.1, ease: 'easeOut' }}
+      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
       {...props}
     >
       {isLoading ? (
@@ -44,7 +49,7 @@ export const Button = ({
       ) : (
         children
       )}
-    </button>
+    </motion.button>
   );
 };
 

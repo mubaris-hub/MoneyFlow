@@ -1,7 +1,8 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import { getInitials } from '../../utils/formatters';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard,
   ArrowRightLeft,
@@ -12,22 +13,71 @@ import {
   Settings,
   LogOut,
   Wallet,
-  BookOpen
+  BookOpen,
+  ChevronDown
 } from 'lucide-react';
 
 export const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
+  const location = useLocation();
 
-  const navItems = [
-    { name: 'Overview', path: '/dashboard', icon: LayoutDashboard, isReal: true },
-    { name: 'Groups', path: '/groups', icon: Users, isReal: true },
-    { name: 'Expenses', path: '/expenses', icon: Receipt, isReal: true },
-    { name: 'Friend Ledgers', path: '/money-accounts', icon: BookOpen, isReal: true },
-    { name: 'Transactions', path: '/transactions', icon: ArrowRightLeft, isReal: true },
-    { name: 'Settlements', path: '/groups', icon: HandCoins, isReal: true },
-    { name: 'Reports', path: '/reports', icon: BarChart3, isReal: true },
-    { name: 'Settings', path: '/settings', icon: Settings, isReal: true },
+  const isGroupsOrSettlementsActive =
+    location.pathname.startsWith('/groups') || location.pathname.startsWith('/settlements');
+
+  const [isGroupsExpanded, setIsGroupsExpanded] = useState(() => isGroupsOrSettlementsActive);
+
+  // Auto-expand if user navigates to /groups, /groups/:id, or /settlements directly or via external link
+  useEffect(() => {
+    if (isGroupsOrSettlementsActive) {
+      setIsGroupsExpanded(true);
+    }
+  }, [isGroupsOrSettlementsActive]);
+
+  const primaryNavItems = [
+    { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
   ];
+
+  const secondaryNavItems = [
+    { name: 'Expenses', path: '/expenses', icon: Receipt },
+    { name: 'Friend Ledgers', path: '/money-accounts', icon: BookOpen },
+    { name: 'Transactions', path: '/transactions', icon: ArrowRightLeft },
+    { name: 'Reports', path: '/reports', icon: BarChart3 },
+    { name: 'Settings', path: '/settings', icon: Settings },
+  ];
+
+  const renderNavLink = (item) => {
+    const Icon = item.icon;
+    return (
+      <NavLink
+        key={item.name}
+        to={item.path}
+        onClick={onClose}
+        className={({ isActive }) =>
+          `relative flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            isActive
+              ? 'text-white'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+          }`
+        }
+      >
+        {({ isActive }) => (
+          <>
+            {isActive && (
+              <motion.div
+                layoutId="sidebarActivePill"
+                className="absolute inset-0 bg-emerald-600 rounded-lg shadow-xs"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            )}
+            <div className="relative z-10 flex items-center space-x-3">
+              <Icon className="w-4 h-4" />
+              <span>{item.name}</span>
+            </div>
+          </>
+        )}
+      </NavLink>
+    );
+  };
 
 
   return (
@@ -59,45 +109,131 @@ export const Sidebar = ({ isOpen, onClose }) => {
         {/* Navigation Section */}
         <div className="flex-1 px-4 py-6 overflow-y-auto space-y-1">
           <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Main Menu</p>
-          {navItems.map((item) => {
-            const Icon = item.icon;
 
-            return item.isReal ? (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`
-                }
-              >
-                <div className="flex items-center space-x-3">
-                  <Icon className="w-4 h-4" />
-                  <span>{item.name}</span>
-                </div>
-              </NavLink>
-            ) : (
-              <div
-                key={item.name}
-                className="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-400 dark:text-slate-500 cursor-not-allowed hover:bg-slate-100/60 dark:hover:bg-slate-800/30"
-                title="Coming soon"
-              >
-                <div className="flex items-center space-x-3">
-                  <Icon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-                  <span>{item.name}</span>
-                </div>
-                {item.badge && (
-                  <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full font-semibold">
-                    {item.badge}
-                  </span>
-                )}
+          {/* Primary: Overview */}
+          {primaryNavItems.map(renderNavLink)}
+
+          {/* Expandable Parent Menu: Groups & Settlements */}
+          <div className="space-y-1 pt-0.5">
+            <button
+              type="button"
+              onClick={() => setIsGroupsExpanded((prev) => !prev)}
+              aria-expanded={isGroupsExpanded}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                isGroupsOrSettlementsActive
+                  ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 font-semibold'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Users
+                  className={`w-4 h-4 ${
+                    isGroupsOrSettlementsActive
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                />
+                <span>Groups & Settlements</span>
               </div>
-            );
-          })}
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  isGroupsExpanded
+                    ? 'rotate-180 text-emerald-600 dark:text-emerald-400'
+                    : 'text-slate-400 dark:text-slate-500'
+                }`}
+              />
+            </button>
+
+            {/* Child Submenu */}
+            <AnimatePresence initial={false}>
+              {isGroupsExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  className="overflow-hidden pl-3 pr-1 py-1 space-y-1 relative"
+                >
+                  <div className="absolute left-6 top-1 bottom-1 w-px bg-slate-200/70 dark:bg-slate-800" />
+
+                  {/* Child 1: Groups */}
+                  <NavLink
+                    to="/groups"
+                    onClick={onClose}
+                    className={({ isActive }) => {
+                      const isGroupsActive =
+                        (isActive || location.pathname.startsWith('/groups')) &&
+                        !location.pathname.startsWith('/settlements');
+                      return `relative flex items-center justify-between pl-7 pr-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        isGroupsActive
+                          ? 'text-white'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`;
+                    }}
+                  >
+                    {({ isActive }) => {
+                      const isGroupsActive =
+                        (isActive || location.pathname.startsWith('/groups')) &&
+                        !location.pathname.startsWith('/settlements');
+                      return (
+                        <>
+                          {isGroupsActive && (
+                            <motion.div
+                              layoutId="sidebarActivePill"
+                              className="absolute inset-0 bg-emerald-600 rounded-lg shadow-xs"
+                              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                            />
+                          )}
+                          <div className="relative z-10 flex items-center space-x-2.5">
+                            <Users className="w-3.5 h-3.5" />
+                            <span>Groups</span>
+                          </div>
+                        </>
+                      );
+                    }}
+                  </NavLink>
+
+                  {/* Child 2: Settlements */}
+                  <NavLink
+                    to="/settlements"
+                    onClick={onClose}
+                    className={({ isActive }) => {
+                      const isSettlementsActive =
+                        isActive || location.pathname.startsWith('/settlements');
+                      return `relative flex items-center justify-between pl-7 pr-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        isSettlementsActive
+                          ? 'text-white'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`;
+                    }}
+                  >
+                    {({ isActive }) => {
+                      const isSettlementsActive =
+                        isActive || location.pathname.startsWith('/settlements');
+                      return (
+                        <>
+                          {isSettlementsActive && (
+                            <motion.div
+                              layoutId="sidebarActivePill"
+                              className="absolute inset-0 bg-emerald-600 rounded-lg shadow-xs"
+                              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                            />
+                          )}
+                          <div className="relative z-10 flex items-center space-x-2.5">
+                            <HandCoins className="w-3.5 h-3.5" />
+                            <span>Settlements</span>
+                          </div>
+                        </>
+                      );
+                    }}
+                  </NavLink>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Secondary Items: Expenses, Friend Ledgers, Transactions, Reports, Settings */}
+          {secondaryNavItems.map(renderNavLink)}
         </div>
 
         {/* User Profile Footer */}
@@ -114,13 +250,14 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
               </div>
             </div>
-            <button
+            <motion.button
+              whileTap={{ scale: 0.92 }}
               onClick={logout}
               className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
-            </button>
+            </motion.button>
           </div>
         </div>
       </aside>

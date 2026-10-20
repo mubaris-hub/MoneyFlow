@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'apps.expenses.apps.ExpensesConfig',
     'apps.money_accounts.apps.MoneyAccountsConfig',
     'apps.notifications.apps.NotificationsConfig',
+    'apps.personal_expenses.apps.PersonalExpensesConfig',
 ]
 
 MIDDLEWARE = [

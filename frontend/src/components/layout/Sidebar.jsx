@@ -53,6 +53,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   const primaryNavItems = [
     { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Personal Expenses', path: '/personal-expenses', icon: Wallet },
   ];
 
   const secondaryNavItems = [

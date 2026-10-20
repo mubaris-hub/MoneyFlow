@@ -12,4 +12,5 @@ urlpatterns = [
     path('api/v1/money-accounts/', include('apps.money_accounts.urls')),
     path('api/v1/notifications/', include('apps.notifications.urls')),
     path('api/v1/reports/', include('apps.reports.urls')),
+    path('api/v1/personal/', include('apps.personal_expenses.urls')),
 ]

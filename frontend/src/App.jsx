@@ -13,6 +13,7 @@ import DashboardPage from './features/dashboard/DashboardPage';
 import GroupListPage from './features/groups/GroupListPage';
 import GroupDetailPage from './features/groups/GroupDetailPage';
 import ExpenseListPage from './features/expenses/ExpenseListPage';
+import PersonalExpensesPage from './features/personal-expenses/PersonalExpensesPage';
 import MoneyAccountsListPage from './features/money-accounts/MoneyAccountsListPage';
 import MoneyAccountDetailPage from './features/money-accounts/MoneyAccountDetailPage';
 import InvitationRespondPage from './features/money-accounts/InvitationRespondPage';
@@ -48,6 +49,7 @@ export const App = () => {
                 <Route path="groups" element={<GroupListPage />} />
                 <Route path="groups/:groupId" element={<GroupDetailPage />} />
                 <Route path="settlements" element={<SettlementsPage />} />
+                <Route path="personal-expenses" element={<PersonalExpensesPage />} />
                 <Route path="expenses" element={<ExpenseListPage />} />
                 <Route path="money-accounts" element={<MoneyAccountsListPage />} />
                 <Route path="money-accounts/:id" element={<MoneyAccountDetailPage />} />

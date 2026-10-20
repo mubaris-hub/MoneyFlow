@@ -362,11 +362,11 @@ export const MoneyAccountDetailPage = () => {
                             Receipt
                           </button>
                         ) : (
-                          <span className="text-slate-300 text-[11px]">-</span>
+                          <span className="text-slate-300 dark:text-slate-600 text-[11px]">-</span>
                         )}
                       </td>
 
-                      <td className="px-3 py-3 text-slate-500 max-w-xs truncate" title={tx.notes}>
+                      <td className="px-3 py-3 text-slate-500 dark:text-slate-400 max-w-xs truncate" title={tx.notes}>
                         {tx.is_voided ? `Void reason: ${tx.void_reason}` : tx.notes || '-'}
                       </td>
                       <td className={`px-3 py-3 text-right font-bold whitespace-nowrap ${getTransactionAmountColor(tx, 'text-slate-800 dark:text-slate-200')}`}>

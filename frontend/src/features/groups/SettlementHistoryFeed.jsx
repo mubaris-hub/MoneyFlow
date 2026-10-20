@@ -12,7 +12,7 @@ export const SettlementHistoryFeed = ({
 }) => {
   if (settlements.length === 0) {
     return (
-      <Card className="py-8 text-center text-xs text-slate-500">
+      <Card className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-slate-200/90 dark:border-slate-800">
         No settlement history recorded for this group yet.
       </Card>
     );
@@ -32,13 +32,13 @@ export const SettlementHistoryFeed = ({
   };
 
   return (
-    <Card className="p-5 border border-slate-200/90 rounded-2xl space-y-4">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-        <h3 className="text-sm font-bold text-slate-900">Settlement History</h3>
-        <span className="text-xs text-slate-500">{settlements.length} Records</span>
+    <Card className="p-5 border border-slate-200/90 dark:border-slate-800 rounded-2xl space-y-4">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-white">Settlement History</h3>
+        <span className="text-xs text-slate-500 dark:text-slate-400">{settlements.length} Records</span>
       </div>
 
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-slate-100 dark:divide-slate-800">
         {settlements.map((s) => {
           const isReceiver = String(s.receiver?.id) === String(currentUserId);
           const isSender = String(s.sender?.id) === String(currentUserId);
@@ -48,18 +48,18 @@ export const SettlementHistoryFeed = ({
             <div key={s.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs font-bold text-slate-900">{s.sender?.first_name} {s.sender?.last_name}</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-xs font-bold text-slate-900">{s.receiver?.first_name} {s.receiver?.last_name}</span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">{s.sender?.first_name} {s.sender?.last_name}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">{s.receiver?.first_name} {s.receiver?.last_name}</span>
                   {getStatusBadge(s.status)}
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {s.date} {s.notes && `• Note: ${s.notes}`}
                 </p>
               </div>
 
               <div className="flex items-center space-x-3 shrink-0">
-                <span className="text-sm font-extrabold text-slate-900">{formatINR(s.amount)}</span>
+                <span className="text-sm font-extrabold text-slate-900 dark:text-white">{formatINR(s.amount)}</span>
 
                 {isPending && (isReceiver || isSender) && (
                   <div className="flex items-center space-x-1.5">
@@ -76,6 +76,7 @@ export const SettlementHistoryFeed = ({
                       variant="outline"
                       size="sm"
                       onClick={() => onStatusUpdate(s.id, 'CANCELLED')}
+                      className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                     >
                       Cancel / Reject
                     </Button>

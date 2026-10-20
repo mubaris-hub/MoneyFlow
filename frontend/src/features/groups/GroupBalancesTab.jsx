@@ -58,7 +58,7 @@ export const GroupBalancesTab = ({ groupId, members = [], currentUserId }) => {
     return (
       <div className="py-12 flex flex-col items-center justify-center space-y-3">
         <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-        <p className="text-xs text-slate-500">Calculating group balances & debts...</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Calculating group balances & debts...</p>
       </div>
     );
   }
@@ -67,7 +67,7 @@ export const GroupBalancesTab = ({ groupId, members = [], currentUserId }) => {
     return (
       <Card className="py-8 text-center space-y-3">
         <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
-        <p className="text-sm font-semibold text-slate-800">{error || 'Unable to load balances.'}</p>
+        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{error || 'Unable to load balances.'}</p>
         <Button variant="outline" size="sm" onClick={fetchData}>
           Try Again
         </Button>

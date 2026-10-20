@@ -287,7 +287,7 @@ export const GroupDetailPage = () => {
       {activeTab === 'expenses' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900">Expenses Logged ({groupExpenses.length})</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Expenses Logged ({groupExpenses.length})</h3>
             <Button variant="primary" size="sm" onClick={() => setIsCreateExpenseModalOpen(true)}>
               <Plus className="w-4 h-4 mr-1.5" /> Log Expense
             </Button>
@@ -296,16 +296,16 @@ export const GroupDetailPage = () => {
           {loadingExpenses ? (
             <div className="py-12 flex flex-col items-center justify-center space-y-3">
               <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-              <p className="text-xs text-slate-500">Loading group expenses...</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Loading group expenses...</p>
             </div>
           ) : groupExpenses.length === 0 ? (
             <Card className="py-12 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mx-auto">
+              <div className="w-12 h-12 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 flex items-center justify-center mx-auto">
                 <Receipt className="w-6 h-6" />
               </div>
               <div className="max-w-sm mx-auto space-y-1">
-                <h3 className="text-sm font-bold text-slate-900">No expenses in this group yet</h3>
-                <p className="text-xs text-slate-500">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">No expenses in this group yet</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Log an expense to split costs automatically across group members.
                 </p>
               </div>
@@ -322,22 +322,22 @@ export const GroupDetailPage = () => {
                   <Card key={expense.id} className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3 shadow-2xs">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0 border border-emerald-100">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0 border border-emerald-100 dark:border-emerald-900/50">
                           <Receipt className="w-5 h-5" />
                         </div>
                         <div>
                           <div className="flex items-center space-x-2">
-                            <h4 className="text-sm font-bold text-slate-900">{expense.description}</h4>
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{expense.description}</h4>
                             <Badge variant="neutral">{expense.category?.name || 'General'}</Badge>
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Paid by <strong>{isPayer ? 'You' : expense.paid_by?.first_name}</strong> on {expense.date} • <span className="text-emerald-700 font-medium">{expense.split_type}</span>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Paid by <strong className="text-slate-700 dark:text-slate-200">{isPayer ? 'You' : expense.paid_by?.first_name}</strong> on {expense.date} • <span className="text-emerald-700 dark:text-emerald-400 font-medium">{expense.split_type}</span>
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-base font-extrabold text-slate-900">{formatINR(expense.total_amount)}</p>
-                        <p className="text-xs text-slate-500">Your share: <strong>{formatINR(expense.my_share)}</strong></p>
+                        <p className="text-base font-extrabold text-slate-900 dark:text-white">{formatINR(expense.total_amount)}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Your share: <strong className="text-slate-700 dark:text-slate-200">{formatINR(expense.my_share)}</strong></p>
                       </div>
                     </div>
                   </Card>

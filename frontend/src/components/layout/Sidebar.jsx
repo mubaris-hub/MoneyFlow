@@ -16,10 +16,14 @@ import {
   BookOpen,
   ChevronDown
 } from 'lucide-react';
+import LogoutConfirmModal from './LogoutConfirmModal';
 
 export const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const isGroupsOrSettlementsActive =
     location.pathname.startsWith('/groups') || location.pathname.startsWith('/settlements');
@@ -32,6 +36,20 @@ export const Sidebar = ({ isOpen, onClose }) => {
       setIsGroupsExpanded(true);
     }
   }, [isGroupsOrSettlementsActive]);
+
+  const handleConfirmLogout = async () => {
+    if (isLoggingOut) return;
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      setIsLogoutModalOpen(false);
+      if (onClose) onClose();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const primaryNavItems = [
     { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
@@ -78,7 +96,6 @@ export const Sidebar = ({ isOpen, onClose }) => {
       </NavLink>
     );
   };
-
 
   return (
     <>
@@ -252,15 +269,26 @@ export const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <motion.button
               whileTap={{ scale: 0.92 }}
-              onClick={logout}
+              onClick={() => setIsLogoutModalOpen(true)}
               className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
               title="Logout"
+              aria-label="Log out"
             >
               <LogOut className="w-4 h-4" />
             </motion.button>
           </div>
         </div>
       </aside>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => {
+          if (!isLoggingOut) setIsLogoutModalOpen(false);
+        }}
+        onConfirm={handleConfirmLogout}
+        isLoading={isLoggingOut}
+      />
     </>
   );
 };

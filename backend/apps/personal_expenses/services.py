@@ -69,7 +69,7 @@ class PersonalExpenseService:
         - Category breakdown for current month
         """
         if target_date is None:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
         elif isinstance(target_date, str):
             target_date = datetime.strptime(target_date, '%Y-%m-%d').date()
 

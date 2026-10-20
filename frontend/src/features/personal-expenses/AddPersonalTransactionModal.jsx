@@ -210,17 +210,34 @@ export const AddPersonalTransactionModal = ({
 
             <form onSubmit={(e) => handleSubmit(e, false)} className="mt-4 space-y-4">
               {/* Prominent Amount Input with Quick Increments */}
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+              <div
+                className={`p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border transition-all duration-150 ${
+                  transactionType === 'EXPENSE'
+                    ? 'border-slate-200/80 dark:border-slate-800 focus-within:border-rose-500/60 dark:focus-within:border-rose-500/60 focus-within:ring-2 focus-within:ring-rose-500/20'
+                    : 'border-slate-200/80 dark:border-slate-800 focus-within:border-emerald-500/60 dark:focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/20'
+                }`}
+              >
+                <label
+                  htmlFor="personal-tx-amount-input"
+                  className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 cursor-pointer"
+                >
                   Amount (₹)
                 </label>
-                <div className="relative flex items-center">
-                  <span className={`text-2xl sm:text-3xl font-extrabold mr-1 ${
-                    transactionType === 'EXPENSE' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
-                  }`}>
+                <div
+                  className="relative flex items-center cursor-text"
+                  onClick={() => amountInputRef.current?.focus()}
+                >
+                  <span
+                    className={`text-2xl sm:text-3xl font-extrabold mr-1 select-none ${
+                      transactionType === 'EXPENSE'
+                        ? 'text-rose-600 dark:text-rose-400'
+                        : 'text-emerald-600 dark:text-emerald-400'
+                    }`}
+                  >
                     ₹
                   </span>
                   <input
+                    id="personal-tx-amount-input"
                     ref={amountInputRef}
                     type="number"
                     step="any"
@@ -228,20 +245,20 @@ export const AddPersonalTransactionModal = ({
                     placeholder="0"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-transparent text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-700 focus:outline-hidden"
+                    className="w-full bg-transparent text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-700 border-none outline-none focus:outline-none focus:ring-0 p-0"
                     required
                   />
                 </div>
 
                 {/* Quick Add Amount Buttons */}
                 <div className="flex flex-wrap gap-1.5 mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold self-center mr-1">Quick Add:</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold self-center mr-1 select-none">Quick Add:</span>
                   {[20, 50, 100, 200, 500, 1000].map((val) => (
                     <button
                       key={val}
                       type="button"
                       onClick={() => handleQuickAddAmount(val)}
-                      className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:text-emerald-600 transition-colors"
+                      className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:text-emerald-600 transition-colors focus:outline-none"
                     >
                       +{val}
                     </button>
@@ -259,7 +276,7 @@ export const AddPersonalTransactionModal = ({
                   placeholder={transactionType === 'EXPENSE' ? 'e.g., Morning Coffee, Grocery Run, Cab ride' : 'e.g., Monthly Salary, Freelance project'}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                   required
                 />
               </div>
@@ -303,7 +320,7 @@ export const AddPersonalTransactionModal = ({
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                    className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
 
@@ -315,7 +332,7 @@ export const AddPersonalTransactionModal = ({
                     type="time"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                    className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
 
@@ -326,7 +343,7 @@ export const AddPersonalTransactionModal = ({
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                    className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   >
                     {PAYMENT_METHODS.map((pm) => (
                       <option key={pm.value} value={pm.value}>
@@ -347,7 +364,7 @@ export const AddPersonalTransactionModal = ({
                   placeholder="Additional context or merchant details..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500"
+                  className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 

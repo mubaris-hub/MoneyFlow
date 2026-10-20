@@ -470,7 +470,7 @@ export const PersonalExpensesPage = () => {
                   placeholder="Search title, merchant, notes..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-500"
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -478,7 +478,7 @@ export const PersonalExpensesPage = () => {
               <select
                 value={transactionType}
                 onChange={(e) => { setTransactionType(e.target.value); setPage(1); }}
-                className="px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium focus:outline-hidden focus:border-emerald-500"
+                className="px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
               >
                 <option value="ALL">All Types (Expenses & Income)</option>
                 <option value="EXPENSE">Expenses Only (-)</option>
@@ -489,7 +489,7 @@ export const PersonalExpensesPage = () => {
               <select
                 value={selectedCategory}
                 onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
-                className="px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium focus:outline-hidden focus:border-emerald-500"
+                className="px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
               >
                 <option value="">All Categories</option>
                 {categories.map((c) => (
@@ -503,7 +503,7 @@ export const PersonalExpensesPage = () => {
               <select
                 value={ordering}
                 onChange={(e) => { setOrdering(e.target.value); setPage(1); }}
-                className="px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium focus:outline-hidden focus:border-emerald-500"
+                className="px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>

@@ -209,7 +209,7 @@ export const PersonalBudgetModal = ({
                       placeholder="e.g. 25000"
                       value={overallBudgetAmount}
                       onChange={(e) => setOverallBudgetAmount(e.target.value)}
-                      className="w-full pl-7 pr-3 py-2 text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                      className="w-full pl-7 pr-3 py-2 text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                       required
                     />
                   </div>
@@ -263,7 +263,7 @@ export const PersonalBudgetModal = ({
                     <select
                       value={addCatId}
                       onChange={(e) => setAddCatId(e.target.value)}
-                      className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-hidden"
+                      className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                     >
                       <option value="">Select Category...</option>
                       {availableCategoriesForBudget.map((c) => (
@@ -277,7 +277,7 @@ export const PersonalBudgetModal = ({
                       placeholder="₹ Limit"
                       value={addCatAmount}
                       onChange={(e) => setAddCatAmount(e.target.value)}
-                      className="w-24 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-hidden"
+                      className="w-24 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                     />
                     <Button type="submit" variant="secondary" size="sm" disabled={saving || !addCatId || !addCatAmount}>
                       <Plus className="w-3.5 h-3.5 mr-1" /> Add

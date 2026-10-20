@@ -1,5 +1,6 @@
 from decimal import Decimal
 from datetime import date, timedelta
+from django.utils import timezone
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -132,7 +133,7 @@ class PersonalExpensesTestCase(TestCase):
             amount=Decimal('350.00'),
             transaction_type='EXPENSE',
             category=self.food_cat,
-            date=date.today()
+            date=timezone.localdate()
         )
 
         # Ensure Group has zero expenses
@@ -141,7 +142,7 @@ class PersonalExpensesTestCase(TestCase):
 
     def test_summary_and_net_cash_flow(self):
         """Test summary metrics, monthly totals, and net cash flow."""
-        today = date.today()
+        today = timezone.localdate()
         # Today's expense
         PersonalTransaction.objects.create(
             user=self.user1,
@@ -172,7 +173,7 @@ class PersonalExpensesTestCase(TestCase):
 
     def test_monthly_budget_management(self):
         """Set, update, and evaluate monthly budget."""
-        today = date.today()
+        today = timezone.localdate()
         budgets_url = reverse('personal_budgets')
 
         # Set monthly budget of ₹20,000

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import moneyAccountService from '../../services/moneyAccount.service';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency, formatDate, getTransactionAmountColor } from '../../utils/formatters';
 import { FileText, Upload, Trash2, X, Download } from 'lucide-react';
 
 export const ReceiptModal = ({ isOpen, onClose, accountId, transaction, isManager, onReceiptUpdated }) => {
@@ -76,7 +76,10 @@ export const ReceiptModal = ({ isOpen, onClose, accountId, transaction, isManage
         <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs space-y-1">
           <div className="flex justify-between items-center">
             <span className="font-bold text-slate-800 dark:text-slate-200">{transaction.description}</span>
-            <span className="font-extrabold text-slate-900 dark:text-white text-sm">{formatCurrency(transaction.amount)}</span>
+            <span className={`font-extrabold text-sm ${getTransactionAmountColor(transaction, 'text-slate-900 dark:text-white')}`}>
+              {transaction.transaction_type === 'DEPOSIT' ? '+' : transaction.transaction_type === 'EXPENSE' || transaction.transaction_type === 'REFUND' ? '-' : ''}
+              {formatCurrency(Math.abs(Number(transaction.amount)))}
+            </span>
           </div>
           <p className="text-slate-500 dark:text-slate-400">
             Date: {formatDate(transaction.date)} | Type: {transaction.transaction_type}

@@ -9,7 +9,7 @@ import Badge from '../../components/ui/Badge';
 import Input from '../../components/ui/Input';
 import Skeleton from '../../components/ui/Skeleton';
 import TransactionDetailModal from './TransactionDetailModal';
-import { formatCurrency, formatDate, getInitials } from '../../utils/formatters';
+import { formatCurrency, formatDate, getInitials, getTransactionAmountColor } from '../../utils/formatters';
 import {
   ArrowRightLeft,
   Receipt,
@@ -537,7 +537,7 @@ export const TransactionsPage = () => {
 
                       {/* Amount */}
                       <td className="px-5 py-4 text-right">
-                        <span className="text-sm font-bold text-slate-900 dark:text-white">
+                        <span className={`text-sm font-bold ${getTransactionAmountColor(tx, 'text-slate-900 dark:text-white')}`}>
                           {formatCurrency(tx.amount, tx.currency)}
                         </span>
                         {tx.user_role && tx.user_role !== 'MEMBER' && (
@@ -586,7 +586,7 @@ export const TransactionsPage = () => {
                         <p className="text-[11px] text-slate-400 dark:text-slate-500">{formatDate(tx.date)} · {tx.type_label}</p>
                       </div>
                     </div>
-                    <span className="text-sm font-bold text-slate-900 dark:text-white shrink-0">
+                    <span className={`text-sm font-bold shrink-0 ${getTransactionAmountColor(tx, 'text-slate-900 dark:text-white')}`}>
                       {formatCurrency(tx.amount, tx.currency)}
                     </span>
                   </div>

@@ -9,7 +9,7 @@ import AddTransactionModal from './AddTransactionModal';
 import VoidTransactionModal from './VoidTransactionModal';
 import InviteOwnerModal from './InviteOwnerModal';
 import ReceiptModal from './ReceiptModal';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency, formatDate, getTransactionAmountColor } from '../../utils/formatters';
 import {
   ArrowLeft,
   Plus,
@@ -369,13 +369,7 @@ export const MoneyAccountDetailPage = () => {
                       <td className="px-3 py-3 text-slate-500 max-w-xs truncate" title={tx.notes}>
                         {tx.is_voided ? `Void reason: ${tx.void_reason}` : tx.notes || '-'}
                       </td>
-                      <td className={`px-3 py-3 text-right font-bold whitespace-nowrap ${
-                        tx.is_voided
-                          ? 'line-through text-slate-400'
-                          : tx.transaction_type === 'DEPOSIT' || (tx.transaction_type === 'ADJUSTMENT' && Number(tx.amount) > 0)
-                          ? 'text-emerald-600'
-                          : 'text-slate-800'
-                      }`}>
+                      <td className={`px-3 py-3 text-right font-bold whitespace-nowrap ${getTransactionAmountColor(tx, 'text-slate-800 dark:text-slate-200')}`}>
                         {tx.transaction_type === 'DEPOSIT' ? '+' : tx.transaction_type === 'EXPENSE' || tx.transaction_type === 'REFUND' ? '-' : ''}
                         {formatCurrency(Math.abs(Number(tx.amount)))}
                       </td>

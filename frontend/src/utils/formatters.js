@@ -95,3 +95,33 @@ export const getTransactionAmountColor = (tx, defaultColor = 'text-slate-900 dar
   if (typeStr === 'DEPOSIT') return 'text-emerald-600 dark:text-emerald-400';
   return defaultColor;
 };
+
+/**
+ * Robust error message extractor for API and network errors.
+ * Handles strings, arrays, Django REST Framework { detail }, { error }, { message },
+ * and nested validation error dictionaries without ever throwing.
+ */
+export const extractErrorMessage = (err, fallback = 'An unexpected error occurred.') => {
+  if (!err) return fallback;
+  const data = err.response?.data;
+  if (!data) return err.message || fallback;
+  if (typeof data === 'string') return data;
+  if (Array.isArray(data) && data.length > 0) {
+    const first = data[0];
+    return typeof first === 'string' ? first : JSON.stringify(first);
+  }
+  if (typeof data === 'object') {
+    if (typeof data.detail === 'string') return data.detail;
+    if (typeof data.error === 'string') return data.error;
+    if (typeof data.message === 'string') return data.message;
+    const values = Object.values(data);
+    if (values.length > 0) {
+      const val = values[0];
+      if (typeof val === 'string') return val;
+      if (Array.isArray(val) && val.length > 0) {
+        return typeof val[0] === 'string' ? val[0] : JSON.stringify(val[0]);
+      }
+    }
+  }
+  return err.message || fallback;
+};

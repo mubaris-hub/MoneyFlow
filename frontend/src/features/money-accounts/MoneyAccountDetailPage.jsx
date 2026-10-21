@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
+import useToast from '../../hooks/useToast';
 import moneyAccountService from '../../services/moneyAccount.service';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
 import AddTransactionModal from './AddTransactionModal';
 import VoidTransactionModal from './VoidTransactionModal';
 import InviteOwnerModal from './InviteOwnerModal';
 import ReceiptModal from './ReceiptModal';
-import { formatCurrency, formatDate, getTransactionAmountColor } from '../../utils/formatters';
+import { formatCurrency, formatDate, getTransactionAmountColor, extractErrorMessage } from '../../utils/formatters';
 import {
   ArrowLeft,
   Plus,
@@ -20,13 +22,17 @@ import {
   Lock,
   FileText,
   Image as ImageIcon,
-  Download
+  Download,
+  Trash2,
+  Archive,
+  AlertCircle
 } from 'lucide-react';
 
 export const MoneyAccountDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [account, setAccount] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -45,8 +51,11 @@ export const MoneyAccountDetailPage = () => {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedTxForReceipt, setSelectedTxForReceipt] = useState(null);
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [closing, setClosing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const handleExportCsv = async () => {
@@ -56,8 +65,9 @@ export const MoneyAccountDetailPage = () => {
       if (filterType) params.transaction_type = filterType;
       if (!showVoided) params.include_voided = 'false';
       await moneyAccountService.exportLedger(id, params);
+      toast.success('Ledger CSV exported successfully.');
     } catch (err) {
-      alert(err.response?.data?.detail || err.message || 'Failed to export CSV.');
+      toast.error(extractErrorMessage(err, 'Failed to export CSV.'));
     } finally {
       setExporting(false);
     }
@@ -138,18 +148,40 @@ export const MoneyAccountDetailPage = () => {
     setIsAddModalOpen(true);
   };
 
-  const handleCloseAccount = async () => {
-    if (!window.confirm('Are you sure you want to close this money account? Balance must be exactly ₹0.00.')) {
+  const handleConfirmClose = async () => {
+    const numBalance = parseFloat(balance);
+    if (!isNaN(numBalance) && Math.abs(numBalance) > 0.001) {
+      toast.error(`Cannot close account: Remaining balance is ₹${balance}. Balance must be exactly ₹0.00.`);
       return;
     }
     setClosing(true);
     try {
       await moneyAccountService.closeAccount(id);
+      toast.success('Money account closed successfully.');
+      setIsCloseModalOpen(false);
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.detail || err.message || 'Failed to close account.');
+      toast.error(extractErrorMessage(err, 'Failed to close account.'));
     } finally {
       setClosing(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (transactions.length > 0) {
+      toast.error(`Cannot delete account: Ledger contains ${transactions.length} transaction(s). Please close the account instead to preserve audit history.`);
+      return;
+    }
+    setDeleting(true);
+    try {
+      await moneyAccountService.deleteAccount(id);
+      toast.success('Money account deleted successfully.');
+      setIsDeleteModalOpen(false);
+      navigate('/money-accounts');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to delete account.'));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -205,30 +237,44 @@ export const MoneyAccountDetailPage = () => {
           </div>
 
           {/* Action Buttons for Manager */}
-          {isManager && !isClosed && (
+          {isManager && (
             <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
-              <Button size="sm" variant="primary" onClick={() => handleOpenAdd('DEPOSIT')}>
-                <Plus className="w-3.5 h-3.5 mr-1" />
-                Deposit
-              </Button>
-              <Button size="sm" variant="danger" onClick={() => handleOpenAdd('EXPENSE')}>
-                <Minus className="w-3.5 h-3.5 mr-1" />
-                Expense
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => handleOpenAdd('REFUND')}>
-                <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                Return Money
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => handleOpenAdd('ADJUSTMENT')}>
-                <Sliders className="w-3.5 h-3.5 mr-1" />
-                Adjustment
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setIsInviteModalOpen(true)}>
-                <Mail className="w-3.5 h-3.5 mr-1" />
-                Invite
-              </Button>
-              <Button size="sm" variant="secondary" onClick={handleCloseAccount} loading={closing}>
-                Close
+              {!isClosed && (
+                <>
+                  <Button size="sm" variant="primary" onClick={() => handleOpenAdd('DEPOSIT')}>
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    Deposit
+                  </Button>
+                  <Button size="sm" variant="danger" onClick={() => handleOpenAdd('EXPENSE')}>
+                    <Minus className="w-3.5 h-3.5 mr-1" />
+                    Expense
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => handleOpenAdd('REFUND')}>
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                    Return Money
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => handleOpenAdd('ADJUSTMENT')}>
+                    <Sliders className="w-3.5 h-3.5 mr-1" />
+                    Adjustment
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setIsInviteModalOpen(true)}>
+                    <Mail className="w-3.5 h-3.5 mr-1" />
+                    Invite
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setIsCloseModalOpen(true)}>
+                    <Archive className="w-3.5 h-3.5 mr-1" />
+                    Close
+                  </Button>
+                </>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="hover:border-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400"
+                onClick={() => setIsDeleteModalOpen(true)}
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" />
+                Delete
               </Button>
             </div>
           )}
@@ -432,6 +478,114 @@ export const MoneyAccountDetailPage = () => {
         isManager={isManager}
         onReceiptUpdated={() => fetchData()}
       />
+
+      {/* Close Account Confirmation Modal */}
+      <Modal
+        isOpen={isCloseModalOpen}
+        onClose={() => !closing && setIsCloseModalOpen(false)}
+        title="Close Money Account"
+      >
+        <div className="space-y-4 text-left">
+          {Math.abs(parseFloat(balance || 0)) > 0.001 ? (
+            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl space-y-2">
+              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-semibold text-sm">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>Active Balance Detected ({formatCurrency(balance)})</span>
+              </div>
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                This money account cannot be closed while funds remain. The ledger balance must be exactly ₹0.00.
+                Please log an Expense or Return Money (Refund) to settle the remaining balance before closing.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Are you sure you want to close <strong className="text-slate-900 dark:text-white font-semibold">"{account.title}"</strong>?
+              </p>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                <p>• The balance is verified at ₹0.00.</p>
+                <p>• Once closed, new transactions cannot be added.</p>
+                <p>• All transaction history, receipts, and audit logs remain permanently accessible in read-only mode.</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={closing}
+              onClick={() => setIsCloseModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            {Math.abs(parseFloat(balance || 0)) <= 0.001 && (
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={closing}
+                onClick={handleConfirmClose}
+              >
+                Confirm Close
+              </Button>
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => !deleting && setIsDeleteModalOpen(false)}
+        title="Delete Money Account"
+      >
+        <div className="space-y-4 text-left">
+          {transactions.length > 0 ? (
+            <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl space-y-2">
+              <div className="flex items-center gap-2 text-rose-800 dark:text-rose-300 font-semibold text-sm">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>Transactions Exist ({transactions.length} recorded)</span>
+              </div>
+              <p className="text-xs text-rose-700 dark:text-rose-400">
+                To maintain financial accounting rules and preserve audit history, money accounts with recorded transactions cannot be permanently deleted.
+              </p>
+              <p className="text-xs text-rose-700 dark:text-rose-400">
+                If this ledger is finished, please <strong>Close</strong> the account instead once the balance is ₹0.00.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Are you sure you want to delete <strong className="text-slate-900 dark:text-white font-semibold">"{account.title}"</strong>?
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                This account has no transactions and will be permanently removed. This action cannot be undone.
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={deleting}
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            {transactions.length === 0 && (
+              <Button
+                variant="danger"
+                size="sm"
+                isLoading={deleting}
+                onClick={handleConfirmDelete}
+              >
+                Delete Account
+              </Button>
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

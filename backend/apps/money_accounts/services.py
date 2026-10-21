@@ -509,3 +509,24 @@ class MoneyAccountService:
                 )
 
             return account
+
+    @staticmethod
+    def delete_account(account_id, manager) -> None:
+        """
+        Deletes a money account if it has no transactions and zero balance.
+        Ledger accounts with existing transactions cannot be deleted to preserve audit integrity.
+        """
+        with transaction.atomic():
+            account = MoneyAccount.objects.select_for_update().get(id=account_id)
+
+            if manager != account.manager:
+                raise ValidationError("Only the account manager can delete the account.")
+
+            if account.transactions.exists():
+                raise ValidationError("Cannot delete account with existing transactions. Please close the account instead to preserve ledger audit history.")
+
+            stats = MoneyAccountService.calculate_balance(account)
+            if stats['balance'] != ZERO:
+                raise ValidationError(f"Cannot delete account with non-zero balance ({stats['balance']}). Balance must be exactly ₹0.00.")
+
+            account.delete()

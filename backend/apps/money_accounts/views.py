@@ -103,6 +103,19 @@ class MoneyAccountDetailView(APIView):
         res_serializer = MoneyAccountSerializer(account)
         return Response(res_serializer.data, status=status.HTTP_200_OK)
 
+    def delete(self, request, pk):
+        """Delete an account (Manager only, requires no transactions and ₹0.00 balance)."""
+        account = self.get_object(request, pk)
+        if account.manager != request.user:
+            raise PermissionDenied("Only the account manager can delete this account.")
+
+        try:
+            MoneyAccountService.delete_account(account_id=account.id, manager=request.user)
+            return Response({"detail": "Money account deleted successfully."}, status=status.HTTP_200_OK)
+        except DjangoValidationError as e:
+            msg = e.message if hasattr(e, 'message') else str(e)
+            return Response({"detail": msg}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class AccountTransactionListCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -402,7 +415,8 @@ class CloseAccountView(APIView):
             serializer = MoneyAccountSerializer(closed_account)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except DjangoValidationError as e:
-            raise DRFValidationError(e.message if hasattr(e, 'message') else str(e))
+            msg = e.message if hasattr(e, 'message') else str(e)
+            return Response({"detail": msg}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ExportLedgerView(APIView):

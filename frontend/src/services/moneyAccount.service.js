@@ -22,6 +22,11 @@ export const moneyAccountService = {
     return response.data;
   },
 
+  deleteAccount: async (id) => {
+    const response = await api.delete(`/money-accounts/${id}/`);
+    return response.data;
+  },
+
   // Transactions
   listTransactions: async (accountId, params = {}) => {
     const response = await api.get(`/money-accounts/${accountId}/transactions/`, { params });

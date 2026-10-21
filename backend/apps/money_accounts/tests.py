@@ -277,6 +277,29 @@ class MoneyAccountServiceTests(TestCase):
             MoneyAccountService.close_account(account_id=account.id, manager=self.stranger)
         self.assertIn("Only the account manager", str(cm.exception))
 
+    def test_delete_account_service(self):
+        # 1. Successful deletion of empty account with 0 balance
+        empty_acc = MoneyAccountService.create_account(
+            manager=self.manager, title="Empty Fund", owner_name="Owner", owner_email="empty@example.com"
+        )
+        acc_id = empty_acc.id
+        MoneyAccountService.delete_account(account_id=acc_id, manager=self.manager)
+        self.assertFalse(MoneyAccount.objects.filter(id=acc_id).exists())
+
+        # 2. Deletion fails if account has transactions
+        acc_with_tx = MoneyAccountService.create_account(
+            manager=self.manager, title="Tx Fund", owner_name="Owner", owner_email="tx@example.com"
+        )
+        MoneyAccountService.add_transaction(acc_with_tx.id, self.manager, 'DEPOSIT', '500.00', 'Initial')
+        with self.assertRaises(ValidationError) as cm:
+            MoneyAccountService.delete_account(account_id=acc_with_tx.id, manager=self.manager)
+        self.assertIn("Cannot delete account with existing transactions", str(cm.exception))
+
+        # 3. Non-manager cannot delete account
+        with self.assertRaises(ValidationError) as cm:
+            MoneyAccountService.delete_account(account_id=acc_with_tx.id, manager=self.stranger)
+        self.assertIn("Only the account manager", str(cm.exception))
+
     def test_invitation_lifecycle_secure_token_and_response(self):
         account = MoneyAccountService.create_account(
             manager=self.manager, title="Invite Test", owner_name="Owner", owner_email="owner@example.com"
@@ -576,6 +599,8 @@ class MoneyAccountAPITests(TestCase):
         # X. Account closure with balance -> 400
         res_fail_close = self.client.post(close_url)
         self.assertEqual(res_fail_close.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', res_fail_close.data)
+        self.assertIn('non-zero balance', res_fail_close.data['detail'])
 
         # Refund 1000 to bring balance to zero
         MoneyAccountService.add_transaction(acc.id, self.manager, 'REFUND', '1000.00', 'Refund all')
@@ -588,6 +613,36 @@ class MoneyAccountAPITests(TestCase):
         # Y. Transaction after closure -> 400
         res_post_tx = self.client.post(tx_url, {'transaction_type': 'DEPOSIT', 'amount': '500.00', 'description': 'Late'}, format='json')
         self.assertEqual(res_post_tx.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_delete_account_api(self):
+        # Empty account can be deleted by manager
+        acc = MoneyAccountService.create_account(
+            manager=self.manager, title="API Delete Fund", owner_name="Owner", owner_email="api_del@example.com"
+        )
+        detail_url = reverse('money_account_detail', kwargs={'pk': acc.id})
+
+        # Stranger attempts delete -> 403
+        self.authenticate(self.stranger)
+        res_stranger = self.client.delete(detail_url)
+        self.assertEqual(res_stranger.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Manager can delete empty account -> 200
+        self.authenticate(self.manager)
+        res_mgr = self.client.delete(detail_url)
+        self.assertEqual(res_mgr.status_code, status.HTTP_200_OK)
+        self.assertIn("detail", res_mgr.data)
+        self.assertFalse(MoneyAccount.objects.filter(id=acc.id).exists())
+
+        # Account with transactions cannot be deleted -> 400 with detail
+        acc_with_tx = MoneyAccountService.create_account(
+            manager=self.manager, title="Cannot Delete Fund", owner_name="Owner", owner_email="no_del@example.com"
+        )
+        MoneyAccountService.add_transaction(acc_with_tx.id, self.manager, 'DEPOSIT', '100.00', 'Deposit')
+        tx_detail_url = reverse('money_account_detail', kwargs={'pk': acc_with_tx.id})
+        res_fail_del = self.client.delete(tx_detail_url)
+        self.assertEqual(res_fail_del.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("detail", res_fail_del.data)
+        self.assertIn("existing transactions", res_fail_del.data["detail"])
 
     # Z. IDOR Protection
     def test_z_idor_protection(self):

@@ -27,6 +27,22 @@ export const PersonalBudgetModal = ({
   const [addCatId, setAddCatId] = useState('');
   const [addCatAmount, setAddCatAmount] = useState('');
 
+  const handleOverallBudgetChange = (e) => {
+    let val = e.target.value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    const parts = val.split('.');
+    if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+    if (parts.length === 2 && parts[1].length > 2) val = parts[0] + '.' + parts[1].slice(0, 2);
+    setOverallBudgetAmount(val);
+  };
+
+  const handleAddCatAmountChange = (e) => {
+    let val = e.target.value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    const parts = val.split('.');
+    if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+    if (parts.length === 2 && parts[1].length > 2) val = parts[0] + '.' + parts[1].slice(0, 2);
+    setAddCatAmount(val);
+  };
+
   // Manage body scroll lock
   useEffect(() => {
     if (isOpen) {
@@ -219,12 +235,17 @@ export const PersonalBudgetModal = ({
                   <div className="relative flex-1">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
                     <input
-                      type="number"
-                      step="any"
-                      min="1"
+                      id="overall-budget-amount-input"
+                      name="overall_budget_amount"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*[.]?[0-9]*"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
                       placeholder="e.g. 25000"
                       value={overallBudgetAmount}
-                      onChange={(e) => setOverallBudgetAmount(e.target.value)}
+                      onChange={handleOverallBudgetChange}
                       className="w-full pl-7 pr-3 py-2 text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                       required
                     />
@@ -289,10 +310,16 @@ export const PersonalBudgetModal = ({
                       ))}
                     </select>
                     <input
-                      type="number"
+                      name="category_budget_limit"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*[.]?[0-9]*"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
                       placeholder="₹ Limit"
                       value={addCatAmount}
-                      onChange={(e) => setAddCatAmount(e.target.value)}
+                      onChange={handleAddCatAmountChange}
                       className="w-24 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                     />
                     <Button type="submit" variant="secondary" size="sm" disabled={saving || !addCatId || !addCatAmount}>

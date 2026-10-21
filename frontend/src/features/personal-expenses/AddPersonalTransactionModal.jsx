@@ -62,10 +62,38 @@ export const AddPersonalTransactionModal = ({
     }
   }, [transactionType, categories]);
 
+  const handleAmountChange = (e) => {
+    let val = e.target.value;
+
+    // Convert comma to dot for international decimal keyboards
+    val = val.replace(/,/g, '.');
+
+    // Remove any character that is not a digit or decimal point
+    val = val.replace(/[^0-9.]/g, '');
+
+    // Allow at most one decimal point
+    const parts = val.split('.');
+    if (parts.length > 2) {
+      val = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    // Limit decimal precision to 2 places (financial standard)
+    if (parts.length === 2 && parts[1].length > 2) {
+      val = parts[0] + '.' + parts[1].slice(0, 2);
+    }
+
+    // Prevent redundant leading zeros like "00" or "01", but allow "0." or single "0"
+    if (val.length > 1 && val.startsWith('0') && val[1] !== '.') {
+      val = val.replace(/^0+/, '') || '0';
+    }
+
+    setAmount(val);
+  };
+
   const handleQuickAddAmount = (addVal) => {
     const current = parseFloat(amount) || 0;
     const next = current + addVal;
-    setAmount(next.toFixed(next % 1 === 0 ? 0 : 2));
+    setAmount(next % 1 === 0 ? String(next) : next.toFixed(2));
   };
 
   const handleTabKeyDown = (e, currentType) => {
@@ -300,13 +328,17 @@ export const AddPersonalTransactionModal = ({
                   </span>
                   <input
                     id="personal-tx-amount-input"
+                    name="amount"
                     ref={amountInputRef}
-                    type="number"
-                    step="any"
-                    min="0.01"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*[.]?[0-9]*"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck="false"
                     placeholder="0"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={handleAmountChange}
                     className="w-full bg-transparent text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-700 border-none outline-none focus:outline-none focus:ring-0 p-0"
                     required
                   />
@@ -330,11 +362,18 @@ export const AddPersonalTransactionModal = ({
 
               {/* Title / Description */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="personal-tx-title-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 cursor-pointer">
                   Description / Title <span className="text-rose-500">*</span>
                 </label>
                 <input
+                  id="personal-tx-title-input"
+                  name="title"
                   type="text"
+                  inputMode="text"
+                  autoCapitalize="sentences"
+                  autoCorrect="on"
+                  spellCheck="true"
+                  autoComplete="off"
                   placeholder={transactionType === 'EXPENSE' ? 'e.g., Morning Coffee, Grocery Run, Cab ride' : 'e.g., Monthly Salary, Freelance project'}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -418,11 +457,18 @@ export const AddPersonalTransactionModal = ({
 
               {/* Optional Notes */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="personal-tx-notes-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 cursor-pointer">
                   Notes <span className="text-slate-400 font-normal">(Optional)</span>
                 </label>
                 <input
+                  id="personal-tx-notes-input"
+                  name="notes"
                   type="text"
+                  inputMode="text"
+                  autoCapitalize="sentences"
+                  autoCorrect="on"
+                  spellCheck="true"
+                  autoComplete="off"
                   placeholder="Additional context or merchant details..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}

@@ -46,6 +46,23 @@ export const EditPersonalTransactionModal = ({
     }
   }, [transaction]);
 
+  const handleAmountChange = (e) => {
+    let val = e.target.value;
+    val = val.replace(/,/g, '.');
+    val = val.replace(/[^0-9.]/g, '');
+    const parts = val.split('.');
+    if (parts.length > 2) {
+      val = parts[0] + '.' + parts.slice(1).join('');
+    }
+    if (parts.length === 2 && parts[1].length > 2) {
+      val = parts[0] + '.' + parts[1].slice(0, 2);
+    }
+    if (val.length > 1 && val.startsWith('0') && val[1] !== '.') {
+      val = val.replace(/^0+/, '') || '0';
+    }
+    setAmount(val);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!transaction) return;
@@ -149,26 +166,38 @@ export const EditPersonalTransactionModal = ({
 
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="edit-personal-amount-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 cursor-pointer">
                   Amount (₹)
                 </label>
                 <input
-                  type="number"
-                  step="any"
-                  min="0.01"
+                  id="edit-personal-amount-input"
+                  name="amount"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.]?[0-9]*"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={handleAmountChange}
                   className="w-full px-3 py-2 text-base font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="edit-personal-title-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 cursor-pointer">
                   Title / Description
                 </label>
                 <input
+                  id="edit-personal-title-input"
+                  name="title"
                   type="text"
+                  inputMode="text"
+                  autoCapitalize="sentences"
+                  autoCorrect="on"
+                  spellCheck="true"
+                  autoComplete="off"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
@@ -238,11 +267,18 @@ export const EditPersonalTransactionModal = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="edit-personal-notes-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 cursor-pointer">
                   Notes
                 </label>
                 <input
+                  id="edit-personal-notes-input"
+                  name="notes"
                   type="text"
+                  inputMode="text"
+                  autoCapitalize="sentences"
+                  autoCorrect="on"
+                  spellCheck="true"
+                  autoComplete="off"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"

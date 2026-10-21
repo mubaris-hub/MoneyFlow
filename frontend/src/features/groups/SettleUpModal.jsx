@@ -24,6 +24,16 @@ export const SettleUpModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Manage body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (isOpen) {
       if (prefill) {
@@ -103,7 +113,7 @@ export const SettleUpModal = ({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={loading ? undefined : onClose}
             aria-hidden="true"
           />

@@ -16,7 +16,7 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md' 
     }
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
 
@@ -37,7 +37,7 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md' 
             initial="initial"
             animate="animate"
             exit="exit"
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={onClose}
             aria-hidden="true"
           />

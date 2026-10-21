@@ -14,6 +14,16 @@ export const LogoutConfirmModal = ({
   const modalRef = useRef(null);
 
   // Keyboard navigation & accessibility (Escape key and focus management)
+  // Manage body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -74,7 +84,7 @@ export const LogoutConfirmModal = ({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={isLoading ? undefined : onClose}
             aria-hidden="true"
           />

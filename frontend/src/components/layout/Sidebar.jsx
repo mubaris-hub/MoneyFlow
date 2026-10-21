@@ -15,7 +15,8 @@ import {
   LogOut,
   Wallet,
   BookOpen,
-  ChevronDown
+  ChevronDown,
+  X
 } from 'lucide-react';
 import LogoutConfirmModal from './LogoutConfirmModal';
 
@@ -37,6 +38,32 @@ export const Sidebar = ({ isOpen, onClose }) => {
       setIsGroupsExpanded(true);
     }
   }, [isGroupsOrSettlementsActive]);
+
+  // Always close sidebar on route change
+  useEffect(() => {
+    if (isOpen && onClose) {
+      onClose();
+    }
+  }, [location.pathname]);
+
+  // Lock body scroll on mobile when sidebar is open, and restore on close/unmount
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow || '';
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [isOpen]);
+
+  const handleNavClick = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
 
   const handleConfirmLogout = async () => {
     if (isLoggingOut) return;
@@ -71,7 +98,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
       <NavLink
         key={item.name}
         to={item.path}
-        onClick={onClose}
+        onClick={handleNavClick}
         className={({ isActive }) =>
           `relative flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
             isActive
@@ -101,34 +128,54 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Mobile overlay */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs md:hidden"
-            onClick={onClose}
-          />
-        )}
-      </AnimatePresence>
+      {/* Mobile Backdrop Overlay */}
+      <div
+        className={`fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs md:hidden transition-opacity duration-200 ease-out ${
+          isOpen
+            ? 'opacity-100 pointer-events-auto cursor-pointer'
+            : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+        onTouchEnd={(e) => {
+          if (isOpen) {
+            e.preventDefault();
+            if (onClose) onClose();
+          }
+        }}
+        aria-hidden={!isOpen}
+        role="button"
+        tabIndex={isOpen ? 0 : -1}
+        aria-label="Close navigation menu backdrop"
+      />
 
       <aside
         className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-r border-slate-200/80 dark:border-slate-800/80 flex flex-col transition-all duration-200 ease-out md:translate-x-0 md:static ${
-          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+          isOpen
+            ? 'translate-x-0 shadow-2xl pointer-events-auto'
+            : '-translate-x-full pointer-events-none md:pointer-events-auto'
         }`}
+        aria-hidden={!isOpen}
       >
         {/* Brand Header */}
-        <div className="px-6 py-5 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center space-x-3">
-          <div className="p-2 rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
-            <Wallet className="w-5 h-5" />
+        <div className="px-5 py-4 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
+              <Wallet className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">MoneyFlow</h1>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Know where your money goes.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">MoneyFlow</h1>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Know where your money goes.</p>
-          </div>
+          {/* Mobile Close Button */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 md:hidden cursor-pointer transition-colors"
+            aria-label="Close navigation menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation Section */}
@@ -184,7 +231,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                   {/* Child 1: Groups */}
                   <NavLink
                     to="/groups"
-                    onClick={onClose}
+                    onClick={handleNavClick}
                     className={({ isActive }) => {
                       const isGroupsActive =
                         (isActive || location.pathname.startsWith('/groups')) &&
@@ -221,7 +268,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                   {/* Child 2: Settlements */}
                   <NavLink
                     to="/settlements"
-                    onClick={onClose}
+                    onClick={handleNavClick}
                     className={({ isActive }) => {
                       const isSettlementsActive =
                         isActive || location.pathname.startsWith('/settlements');

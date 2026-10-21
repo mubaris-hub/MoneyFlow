@@ -23,6 +23,16 @@ export const EditPersonalTransactionModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Manage body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (transaction) {
       setAmount(String(transaction.amount || ''));
@@ -101,7 +111,7 @@ export const EditPersonalTransactionModal = ({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={loading ? undefined : onClose}
             aria-hidden="true"
           />

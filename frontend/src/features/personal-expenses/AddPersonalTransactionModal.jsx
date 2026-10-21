@@ -30,6 +30,16 @@ export const AddPersonalTransactionModal = ({
 
   const amountInputRef = useRef(null);
 
+  // Manage body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
+
   // Sync initial type when opened
   useEffect(() => {
     if (isOpen) {
@@ -152,7 +162,7 @@ export const AddPersonalTransactionModal = ({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={loading ? undefined : onClose}
             aria-hidden="true"
           />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trash2, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
@@ -14,6 +14,16 @@ export const DeletePersonalTransactionModal = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Manage body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
 
   const handleDelete = async () => {
     if (!transaction) return;
@@ -49,7 +59,7 @@ export const DeletePersonalTransactionModal = ({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={loading ? undefined : onClose}
             aria-hidden="true"
           />

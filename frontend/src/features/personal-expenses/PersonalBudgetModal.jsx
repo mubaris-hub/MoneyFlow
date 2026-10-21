@@ -27,6 +27,16 @@ export const PersonalBudgetModal = ({
   const [addCatId, setAddCatId] = useState('');
   const [addCatAmount, setAddCatAmount] = useState('');
 
+  // Manage body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
+
   const fetchBudgets = async () => {
     setLoading(true);
     setError('');
@@ -146,7 +156,7 @@ export const PersonalBudgetModal = ({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={saving ? undefined : onClose}
             aria-hidden="true"
           />

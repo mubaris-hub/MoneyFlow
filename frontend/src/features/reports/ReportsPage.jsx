@@ -146,12 +146,29 @@ export const ReportsPage = () => {
     fetchReportData();
   }, [activeTab, startDate, endDate, selectedGroupId, selectedAccountId]);
 
+  const hasDataForTab = Boolean(
+    (activeTab === 'overview' && dashboardData) ||
+    (activeTab === 'expenses' && expenseData) ||
+    (activeTab === 'groups' && groupData) ||
+    (activeTab === 'money-accounts' && moneyAccountData)
+  );
+  const showSkeleton = loading && !hasDataForTab;
+  const isRefreshing = loading && hasDataForTab;
+
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Reports & Analytics</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Reports & Analytics</h1>
+            {isRefreshing && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40">
+                <RotateCcw className="w-3 h-3 animate-spin" />
+                Updating
+              </span>
+            )}
+          </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Visual insights, spending breakdowns and financial trends across your groups and ledgers.
           </p>
@@ -192,58 +209,90 @@ export const ReportsPage = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-800 flex items-center space-x-2 overflow-x-auto">
+      <div className="border-b border-slate-200 dark:border-slate-800 flex items-center space-x-2 overflow-x-auto pb-px">
         <button
+          type="button"
           onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+          className={`relative px-4 py-2.5 text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
             activeTab === 'overview'
-              ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
-              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <BarChart3 className="w-4 h-4" />
-          Overview
+          <span>Overview</span>
+          {activeTab === 'overview' && (
+            <motion.div
+              layoutId="reportsActiveTabUnderline"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+              transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+            />
+          )}
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('expenses')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+          className={`relative px-4 py-2.5 text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
             activeTab === 'expenses'
-              ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
-              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <Receipt className="w-4 h-4" />
-          Expense Analytics
+          <span>Expense Analytics</span>
+          {activeTab === 'expenses' && (
+            <motion.div
+              layoutId="reportsActiveTabUnderline"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+              transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+            />
+          )}
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('groups')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+          className={`relative px-4 py-2.5 text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
             activeTab === 'groups'
-              ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
-              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <Users className="w-4 h-4" />
-          Group Analytics
+          <span>Group Analytics</span>
+          {activeTab === 'groups' && (
+            <motion.div
+              layoutId="reportsActiveTabUnderline"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+              transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+            />
+          )}
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('money-accounts')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+          className={`relative px-4 py-2.5 text-xs font-bold flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
             activeTab === 'money-accounts'
-              ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
-              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          Friend Ledgers
+          <span>Friend Ledgers</span>
+          {activeTab === 'money-accounts' && (
+            <motion.div
+              layoutId="reportsActiveTabUnderline"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+              transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+            />
+          )}
         </button>
       </div>
 
-      {/* Loading State */}
-      {loading && (
+      {/* Loading Skeleton only on initial un-cached load */}
+      {showSkeleton && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
@@ -279,8 +328,14 @@ export const ReportsPage = () => {
       )}
 
       {/* Tab 1: Overview */}
-      {!loading && !error && activeTab === 'overview' && dashboardData && (
-        <div className="space-y-6">
+      {!showSkeleton && !error && activeTab === 'overview' && dashboardData && (
+        <motion.div
+          key="overview"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+          className={`space-y-6 transition-opacity duration-150 ${isRefreshing ? 'opacity-65' : ''}`}
+        >
           {/* Key Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
@@ -371,12 +426,18 @@ export const ReportsPage = () => {
               )}
             </Card>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Tab 2: Expense Analytics */}
-      {!loading && !error && activeTab === 'expenses' && expenseData && (
-        <div className="space-y-6">
+      {!showSkeleton && !error && activeTab === 'expenses' && expenseData && (
+        <motion.div
+          key="expenses"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+          className={`space-y-6 transition-opacity duration-150 ${isRefreshing ? 'opacity-65' : ''}`}
+        >
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">My Assigned Share</span>
@@ -422,12 +483,18 @@ export const ReportsPage = () => {
               </table>
             </div>
           </Card>
-        </div>
+        </motion.div>
       )}
 
       {/* Tab 3: Group Analytics */}
-      {!loading && !error && activeTab === 'groups' && (
-        <div className="space-y-6">
+      {!showSkeleton && !error && activeTab === 'groups' && (
+        <motion.div
+          key="groups"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+          className={`space-y-6 transition-opacity duration-150 ${isRefreshing ? 'opacity-65' : ''}`}
+        >
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Select Group:</span>
             <select
@@ -473,12 +540,18 @@ export const ReportsPage = () => {
               </Card>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* Tab 4: Friend Ledger Analytics */}
-      {!loading && !error && activeTab === 'money-accounts' && moneyAccountData && (
-        <div className="space-y-6">
+      {!showSkeleton && !error && activeTab === 'money-accounts' && moneyAccountData && (
+        <motion.div
+          key="money-accounts"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+          className={`space-y-6 transition-opacity duration-150 ${isRefreshing ? 'opacity-65' : ''}`}
+        >
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Total Deposits</span>
@@ -528,7 +601,7 @@ export const ReportsPage = () => {
               </table>
             </div>
           </Card>
-        </div>
+        </motion.div>
       )}
     </div>
   );

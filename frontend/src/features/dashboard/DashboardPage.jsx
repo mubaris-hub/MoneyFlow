@@ -38,12 +38,19 @@ export const DashboardPage = () => {
     pendingSettlementsAmount: 0,
     pendingSettlementsCount: 0,
     loading: true,
+    isRefreshing: false,
+    hasLoaded: false,
     error: null,
   });
 
   const fetchDashboardStats = useCallback(async () => {
     try {
-      setStats((prev) => ({ ...prev, loading: true, error: null }));
+      setStats((prev) => ({
+        ...prev,
+        loading: !prev.hasLoaded,
+        isRefreshing: prev.hasLoaded,
+        error: null,
+      }));
       const report = await reportService.getDashboardReport();
 
       setStats({
@@ -55,6 +62,8 @@ export const DashboardPage = () => {
         pendingSettlementsAmount: parseFloat(report.pending_settlements_amount) || 0,
         pendingSettlementsCount: report.pending_settlements_count ?? 0,
         loading: false,
+        isRefreshing: false,
+        hasLoaded: true,
         error: null,
       });
     } catch (err) {
@@ -146,12 +155,15 @@ export const DashboardPage = () => {
           pendingSettlementsAmount: pendingSum,
           pendingSettlementsCount: pendingCount,
           loading: false,
+          isRefreshing: false,
+          hasLoaded: true,
           error: null,
         });
       } catch (fallbackErr) {
         setStats((prev) => ({
           ...prev,
           loading: false,
+          isRefreshing: false,
           error: err.response?.data?.detail || 'Unable to connect to MoneyFlow API server.',
         }));
       }
@@ -218,7 +230,7 @@ export const DashboardPage = () => {
       )}
 
       {/* Summary Cards Grid */}
-      {stats.loading ? (
+      {stats.loading && !stats.hasLoaded ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {[...Array(4)].map((_, i) => (
             <div
@@ -239,7 +251,9 @@ export const DashboardPage = () => {
           variants={staggerContainer}
           initial="initial"
           animate="animate"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5"
+          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 transition-opacity duration-150 ${
+            stats.isRefreshing ? 'opacity-65' : 'opacity-100'
+          }`}
         >
           <motion.div variants={staggerItem}>
             <StatCard

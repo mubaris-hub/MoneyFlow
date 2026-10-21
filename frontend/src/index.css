@@ -95,6 +95,15 @@
   );
 }
 
+/* Smooth global theme crossfade without persistent transition overhead */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, fill 150ms ease-out, stroke 150ms ease-out !important;
+  transition-delay: 0ms !important;
+}
+
 /* Accessibility: Respect system reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {

@@ -36,7 +36,7 @@ export const Input = React.forwardRef(({
           ref={ref}
           id={inputId}
           type={effectiveType}
-          className={`w-full text-sm font-normal text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800/90 border rounded-lg px-3.5 py-2.5 transition-all duration-150 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden ${
+          className={`w-full text-sm font-normal text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800/90 border rounded-lg px-3.5 py-2.5 transition-all duration-150 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none ${
             Icon ? 'pl-10' : ''
           } ${
             isPasswordInput ? 'pr-10' : ''

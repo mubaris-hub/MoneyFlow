@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 import groupService from '../../services/group.service';
 import useAuth from '../../hooks/useAuth';
 import Card from '../../components/ui/Card';
@@ -187,41 +188,65 @@ export const GroupDetailPage = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex space-x-6 text-sm font-semibold">
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex space-x-6 text-sm font-semibold pb-px">
           <button
+            type="button"
             onClick={() => setActiveTab('members')}
-            className={`pb-2 border-b-2 transition-colors flex items-center space-x-2 cursor-pointer ${
+            className={`relative pb-3 transition-colors flex items-center space-x-2 cursor-pointer ${
               activeTab === 'members'
-                ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Users className="w-4 h-4" />
             <span>Members ({members.length})</span>
+            {activeTab === 'members' && (
+              <motion.div
+                layoutId="groupDetailActiveTabUnderline"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+              />
+            )}
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('balances')}
-            className={`pb-2 border-b-2 transition-colors flex items-center space-x-2 cursor-pointer ${
+            className={`relative pb-3 transition-colors flex items-center space-x-2 cursor-pointer ${
               activeTab === 'balances'
-                ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Wallet className="w-4 h-4" />
             <span>Balances</span>
+            {activeTab === 'balances' && (
+              <motion.div
+                layoutId="groupDetailActiveTabUnderline"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+              />
+            )}
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('expenses')}
-            className={`pb-2 border-b-2 transition-colors flex items-center space-x-2 cursor-pointer ${
+            className={`relative pb-3 transition-colors flex items-center space-x-2 cursor-pointer ${
               activeTab === 'expenses'
-                ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Receipt className="w-4 h-4" />
             <span>Expenses</span>
+            {activeTab === 'expenses' && (
+              <motion.div
+                layoutId="groupDetailActiveTabUnderline"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+              />
+            )}
           </button>
         </div>
       </div>

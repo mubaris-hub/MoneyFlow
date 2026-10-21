@@ -122,8 +122,6 @@ export const PersonalBudgetModal = ({
     }
   };
 
-  if (!isOpen) return null;
-
   const expenseCategories = categories.filter((c) => c.category_type === 'EXPENSE');
   const existingCategoryIds = new Set(
     (budgetsData?.category_budgets || []).map((b) => b.category_id)
@@ -134,20 +132,28 @@ export const PersonalBudgetModal = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 overflow-y-auto">
+      {isOpen && (
         <motion.div
-          variants={modalBackdropVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
-          onClick={saving ? undefined : onClose}
-          aria-hidden="true"
-        />
-
-        <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center pointer-events-none">
+          key="personal-budget-modal-root"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
+          className="fixed inset-0 z-50 overflow-y-auto"
+        >
           <motion.div
-            variants={modalDialogVariants}
+            variants={modalBackdropVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            onClick={saving ? undefined : onClose}
+            aria-hidden="true"
+          />
+
+          <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center pointer-events-none">
+            <motion.div
+              variants={modalDialogVariants}
             initial="initial"
             animate="animate"
             exit="exit"
@@ -345,8 +351,9 @@ export const PersonalBudgetModal = ({
             </div>
           </motion.div>
         </div>
-      </div>
-    </AnimatePresence>
+      </motion.div>
+    )}
+  </AnimatePresence>
   );
 };
 

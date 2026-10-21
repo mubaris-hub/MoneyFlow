@@ -42,10 +42,12 @@ export const TransactionsPage = () => {
   const [transactions, setTransactions] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   // Filter States
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [transactionType, setTransactionType] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [groupId, setGroupId] = useState('');
@@ -65,6 +67,15 @@ export const TransactionsPage = () => {
   // Detail Modal
   const [selectedTx, setSelectedTx] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // Debounce search input to eliminate redundant API requests
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 250);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   // Load Filter Options (Groups and Ledgers)
   useEffect(() => {
@@ -89,9 +100,13 @@ export const TransactionsPage = () => {
     loadOptions();
   }, []);
 
-  // Fetch Transactions
-  const fetchTransactions = useCallback(async () => {
-    setLoading(true);
+  // Fetch Transactions with race-condition prevention & non-flashing updates
+  const fetchTransactions = useCallback(async (isInitial = false) => {
+    if (isInitial || transactions.length === 0) {
+      setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     setError(null);
     try {
       const params = {
@@ -100,7 +115,7 @@ export const TransactionsPage = () => {
         ordering
       };
 
-      if (search.trim()) params.search = search.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       if (transactionType !== 'ALL') params.transaction_type = transactionType;
       if (statusFilter !== 'ALL') params.status = statusFilter;
       if (groupId) params.group_id = groupId;
@@ -117,12 +132,57 @@ export const TransactionsPage = () => {
       setError('Unable to load transactions. Please check your connection and try again.');
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
-  }, [page, pageSize, ordering, search, transactionType, statusFilter, groupId, dateFrom, dateTo]);
+  }, [page, pageSize, ordering, debouncedSearch, transactionType, statusFilter, groupId, dateFrom, dateTo, transactions.length]);
 
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    let active = true;
+    const execute = async () => {
+      if (transactions.length === 0) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
+      setError(null);
+      try {
+        const params = {
+          page,
+          page_size: pageSize,
+          ordering
+        };
+
+        if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+        if (transactionType !== 'ALL') params.transaction_type = transactionType;
+        if (statusFilter !== 'ALL') params.status = statusFilter;
+        if (groupId) params.group_id = groupId;
+        if (dateFrom) params.date_from = dateFrom;
+        if (dateTo) params.date_to = dateTo;
+
+        const data = await transactionService.getTransactions(params);
+        if (active) {
+          setTransactions(data.transactions || []);
+          setSummary(data.summary || null);
+          setTotalPages(data.total_pages || 1);
+          setTotalCount(data.count || 0);
+        }
+      } catch (err) {
+        if (active) {
+          console.error('Failed to load transactions:', err);
+          setError('Unable to load transactions. Please check your connection and try again.');
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+          setIsRefreshing(false);
+        }
+      }
+    };
+    execute();
+    return () => {
+      active = false;
+    };
+  }, [page, pageSize, ordering, debouncedSearch, transactionType, statusFilter, groupId, dateFrom, dateTo]);
 
   // Handle Quick Date Presets
   const applyDatePreset = (preset) => {
@@ -293,7 +353,7 @@ export const TransactionsPage = () => {
                 setPage(1);
               }}
               placeholder="Search description, members, or groups..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
             />
             {search && (
               <button
@@ -310,7 +370,7 @@ export const TransactionsPage = () => {
             <select
               value={transactionType}
               onChange={(e) => { setTransactionType(e.target.value); setPage(1); }}
-              className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-hidden focus:border-emerald-500"
+              className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
             >
               <option value="ALL">All Types</option>
               <option value="EXPENSE">Group Expenses</option>
@@ -323,7 +383,7 @@ export const TransactionsPage = () => {
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-hidden focus:border-emerald-500"
+              className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
             >
               <option value="ALL">All Statuses</option>
               <option value="COMPLETED">Completed</option>
@@ -336,7 +396,7 @@ export const TransactionsPage = () => {
             <select
               value={groupId}
               onChange={(e) => { setGroupId(e.target.value); setPage(1); }}
-              className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-hidden focus:border-emerald-500 truncate"
+              className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500 truncate"
             >
               <option value="">All Groups & Ledgers</option>
               {availableGroups.map((g) => (
@@ -348,7 +408,7 @@ export const TransactionsPage = () => {
             <select
               value={ordering}
               onChange={(e) => { setOrdering(e.target.value); setPage(1); }}
-              className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-hidden focus:border-emerald-500"
+              className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
@@ -390,14 +450,14 @@ export const TransactionsPage = () => {
               type="date"
               value={dateFrom}
               onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-              className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs focus:outline-hidden focus:border-emerald-500"
+              className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
             />
             <span className="text-slate-400 dark:text-slate-500">to</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-              className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs focus:outline-hidden focus:border-emerald-500"
+              className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
             />
           </div>
 
@@ -427,7 +487,7 @@ export const TransactionsPage = () => {
 
       {/* Transactions Table & Cards */}
       <Card className="border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
-        {loading ? (
+        {loading && transactions.length === 0 ? (
           <div className="p-6 space-y-4">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-800/60 last:border-0">
@@ -462,7 +522,7 @@ export const TransactionsPage = () => {
             )}
           </div>
         ) : (
-          <>
+          <div className={`transition-opacity duration-150 ${isRefreshing ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm divide-y divide-slate-100 dark:divide-slate-800">
@@ -635,7 +695,7 @@ export const TransactionsPage = () => {
                 </Button>
               </div>
             </div>
-          </>
+          </div>
         )}
       </Card>
 

@@ -47,6 +47,7 @@ export const PersonalExpensesPage = () => {
   // Transactions list
   const [transactions, setTransactions] = useState([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [isRefreshingTx, setIsRefreshingTx] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -83,9 +84,11 @@ export const PersonalExpensesPage = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Load Categories & Summary
-  const fetchSummaryAndCategories = useCallback(async () => {
-    setLoadingSummary(true);
+  // Load Categories & Summary without flashing skeletons on background updates
+  const fetchSummaryAndCategories = useCallback(async (isInitial = false) => {
+    if (isInitial || !summary) {
+      setLoadingSummary(true);
+    }
     try {
       const [sumRes, catRes] = await Promise.all([
         personalExpenseService.getSummary(),
@@ -98,11 +101,11 @@ export const PersonalExpensesPage = () => {
     } finally {
       setLoadingSummary(false);
     }
-  }, []);
+  }, [summary]);
 
   useEffect(() => {
-    fetchSummaryAndCategories();
-  }, [fetchSummaryAndCategories, refreshTrigger]);
+    fetchSummaryAndCategories(true);
+  }, [refreshTrigger]);
 
   // Apply Date Filter Preset
   const handleApplyPreset = (preset) => {
@@ -136,31 +139,49 @@ export const PersonalExpensesPage = () => {
     setPage(1);
   };
 
-  // Fetch Transactions with current filters
-  const fetchTransactions = useCallback(async () => {
-    setLoadingTransactions(true);
-    try {
-      const params = {
-        page,
-        page_size: pageSize,
-        ordering,
-      };
+  // Fetch Transactions with race-condition prevention & smooth updates
+  useEffect(() => {
+    let active = true;
+    const execute = async () => {
+      if (transactions.length === 0) {
+        setLoadingTransactions(true);
+      } else {
+        setIsRefreshingTx(true);
+      }
+      try {
+        const params = {
+          page,
+          page_size: pageSize,
+          ordering,
+        };
 
-      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
-      if (transactionType !== 'ALL') params.type = transactionType;
-      if (selectedCategory) params.category = selectedCategory;
-      if (selectedPaymentMethod) params.payment_method = selectedPaymentMethod;
-      if (dateFrom) params.date_from = dateFrom;
-      if (dateTo) params.date_to = dateTo;
+        if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+        if (transactionType !== 'ALL') params.type = transactionType;
+        if (selectedCategory) params.category = selectedCategory;
+        if (selectedPaymentMethod) params.payment_method = selectedPaymentMethod;
+        if (dateFrom) params.date_from = dateFrom;
+        if (dateTo) params.date_to = dateTo;
 
-      const res = await personalExpenseService.getTransactions(params);
-      setTransactions(res.results || res);
-      setTotalCount(res.count !== undefined ? res.count : (res.results || res).length);
-    } catch (err) {
-      console.error('Failed to load personal transactions:', err);
-    } finally {
-      setLoadingTransactions(false);
-    }
+        const res = await personalExpenseService.getTransactions(params);
+        if (active) {
+          setTransactions(res.results || res);
+          setTotalCount(res.count !== undefined ? res.count : (res.results || res).length);
+        }
+      } catch (err) {
+        if (active) {
+          console.error('Failed to load personal transactions:', err);
+        }
+      } finally {
+        if (active) {
+          setLoadingTransactions(false);
+          setIsRefreshingTx(false);
+        }
+      }
+    };
+    execute();
+    return () => {
+      active = false;
+    };
   }, [
     page,
     ordering,
@@ -169,12 +190,9 @@ export const PersonalExpensesPage = () => {
     selectedCategory,
     selectedPaymentMethod,
     dateFrom,
-    dateTo
+    dateTo,
+    refreshTrigger
   ]);
-
-  useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions, refreshTrigger]);
 
   const handleOpenAdd = (type = 'EXPENSE') => {
     setAddModalType(type);
@@ -422,43 +440,64 @@ export const PersonalExpensesPage = () => {
           <button
             type="button"
             onClick={() => setActiveTab('timeline')}
-            className={`flex items-center gap-2 py-3 px-4 border-b-2 font-bold text-xs transition-colors ${
+            className={`relative flex items-center gap-2 py-3 px-4 font-bold text-xs transition-colors cursor-pointer ${
               activeTab === 'timeline'
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
             <ListOrdered className="w-4 h-4" />
-            Transactions & Daily Timeline
+            <span>Transactions & Daily Timeline</span>
+            {activeTab === 'timeline' && (
+              <motion.div
+                layoutId="personalExpenseActiveTab"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+              />
+            )}
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('analytics')}
-            className={`flex items-center gap-2 py-3 px-4 border-b-2 font-bold text-xs transition-colors ${
+            className={`relative flex items-center gap-2 py-3 px-4 font-bold text-xs transition-colors cursor-pointer ${
               activeTab === 'analytics'
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            Analytics & Insights
+            <span>Analytics & Insights</span>
+            {activeTab === 'analytics' && (
+              <motion.div
+                layoutId="personalExpenseActiveTab"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+              />
+            )}
           </button>
         </div>
 
         <button
           type="button"
           onClick={() => setRefreshTrigger((p) => p + 1)}
-          className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          disabled={isRefreshingTx}
+          className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
           title="Refresh"
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className={`w-4 h-4 ${isRefreshingTx ? 'animate-spin text-emerald-600' : ''}`} />
         </button>
       </div>
 
       {/* TAB 1: Transactions & Timeline */}
       {activeTab === 'timeline' && (
-        <div className="space-y-4">
+        <motion.div
+          key="timeline-tab"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+          className="space-y-4"
+        >
           {/* Filters Bar Card */}
           <Card className="p-4 space-y-3.5 border border-slate-200/80 dark:border-slate-800">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -569,7 +608,7 @@ export const PersonalExpensesPage = () => {
           </Card>
 
           {/* Timeline Content */}
-          {loadingTransactions ? (
+          {loadingTransactions && transactions.length === 0 ? (
             <Card className="p-6 space-y-4 border border-slate-200/80 dark:border-slate-800">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
@@ -610,7 +649,7 @@ export const PersonalExpensesPage = () => {
               </div>
             </Card>
           ) : (
-            <div className="space-y-5">
+            <div className={`space-y-5 transition-opacity duration-150 ${isRefreshingTx ? 'opacity-65 pointer-events-none' : 'opacity-100'}`}>
               {Object.keys(groupedTransactions).map((dateKey) => {
                 const dayTxs = groupedTransactions[dateKey];
                 const dayTotalExpense = dayTxs
@@ -758,12 +797,19 @@ export const PersonalExpensesPage = () => {
               )}
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* TAB 2: Analytics & Insights */}
       {activeTab === 'analytics' && (
-        <PersonalAnalyticsSection refreshTrigger={refreshTrigger} />
+        <motion.div
+          key="analytics-tab"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+        >
+          <PersonalAnalyticsSection refreshTrigger={refreshTrigger} />
+        </motion.div>
       )}
 
       {/* Modals */}

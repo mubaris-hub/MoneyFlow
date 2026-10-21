@@ -60,7 +60,14 @@ export const LogoutConfirmModal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <motion.div
+          key="logout-modal-root"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
+          className="fixed inset-0 z-50 overflow-y-auto"
+        >
           {/* Semi-transparent Backdrop Overlay */}
           <motion.div
             variants={modalBackdropVariants}
@@ -154,7 +161,7 @@ export const LogoutConfirmModal = ({
               </div>
             </motion.div>
           </div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

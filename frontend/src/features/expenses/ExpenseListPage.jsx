@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import Skeleton from '../../components/ui/Skeleton';
 import CreateExpenseModal from './CreateExpenseModal';
 import ReceiptScanModal from './ReceiptScanModal';
 import { getInitials, formatINR } from '../../utils/formatters';
@@ -37,11 +38,21 @@ export const ExpenseListPage = () => {
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
+
+  // Debounce search query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 250);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const fetchFilters = async () => {
     try {
@@ -49,37 +60,71 @@ export const ExpenseListPage = () => {
         groupService.getGroups(),
         expenseService.getCategories()
       ]);
-      setGroups(grps);
-      setCategories(cats);
+      setGroups(grps || []);
+      setCategories(cats || []);
     } catch (err) {
       console.error(err);
     }
   };
 
   const fetchExpenses = useCallback(async () => {
-    try {
+    if (expenses.length === 0) {
       setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+    try {
       const params = {};
       if (selectedGroup) params.group_id = selectedGroup;
       if (selectedCategory) params.category_id = selectedCategory;
-      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
 
       const data = await expenseService.getExpenses(params);
-      setExpenses(data);
+      setExpenses(data || []);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
-  }, [selectedGroup, selectedCategory, searchQuery]);
+  }, [selectedGroup, selectedCategory, debouncedSearch, expenses.length]);
 
   useEffect(() => {
     fetchFilters();
   }, []);
 
   useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+    let active = true;
+    const load = async () => {
+      if (expenses.length === 0) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
+      try {
+        const params = {};
+        if (selectedGroup) params.group_id = selectedGroup;
+        if (selectedCategory) params.category_id = selectedCategory;
+        if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+
+        const data = await expenseService.getExpenses(params);
+        if (active) {
+          setExpenses(data || []);
+        }
+      } catch (err) {
+        if (active) console.error(err);
+      } finally {
+        if (active) {
+          setLoading(false);
+          setIsRefreshing(false);
+        }
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [selectedGroup, selectedCategory, debouncedSearch]);
 
   const handleDeleteExpense = async (expenseId) => {
     if (!window.confirm('Are you sure you want to delete this expense?')) return;
@@ -124,7 +169,7 @@ export const ExpenseListPage = () => {
               placeholder="Search by description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-600"
+              className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-600"
             />
           </div>
 
@@ -132,7 +177,7 @@ export const ExpenseListPage = () => {
           <select
             value={selectedGroup}
             onChange={(e) => setSelectedGroup(e.target.value)}
-            className="w-full py-2 px-3 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-emerald-600 font-medium"
+            className="w-full py-2 px-3 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-600 font-medium"
           >
             <option value="">All Groups</option>
             {groups.map(g => (
@@ -144,7 +189,7 @@ export const ExpenseListPage = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full py-2 px-3 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-emerald-600 font-medium"
+            className="w-full py-2 px-3 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-600 font-medium"
           >
             <option value="">All Categories</option>
             {categories.map(c => (
@@ -155,10 +200,20 @@ export const ExpenseListPage = () => {
       </Card>
 
       {/* Expenses Feed */}
-      {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center space-y-3">
-          <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading expenses...</p>
+      {loading && expenses.length === 0 ? (
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="p-4 flex items-center justify-between">
+              <div className="flex items-center space-x-3 w-1/3">
+                <Skeleton variant="circle" className="w-10 h-10" />
+                <div className="space-y-1.5 w-full">
+                  <Skeleton variant="text" className="w-3/4 h-4" />
+                  <Skeleton variant="text" className="w-1/2 h-3" />
+                </div>
+              </div>
+              <Skeleton variant="text" className="w-24 h-5" />
+            </Card>
+          ))}
         </div>
       ) : expenses.length === 0 ? (
         <Card className="py-16 text-center space-y-4">
@@ -176,7 +231,7 @@ export const ExpenseListPage = () => {
           </Button>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className={`space-y-3 transition-opacity duration-150 ${isRefreshing ? 'opacity-65 pointer-events-none' : 'opacity-100'}`}>
           {expenses.map((expense) => {
             const isPayer = expense.paid_by?.id === user?.id;
 

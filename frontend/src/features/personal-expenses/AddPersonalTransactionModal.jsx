@@ -58,6 +58,16 @@ export const AddPersonalTransactionModal = ({
     setAmount(next.toFixed(next % 1 === 0 ? 0 : 2));
   };
 
+  const handleTabKeyDown = (e, currentType) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const nextType = currentType === 'EXPENSE' ? 'INCOME' : 'EXPENSE';
+      setTransactionType(nextType);
+      const nextId = nextType === 'EXPENSE' ? 'personal-tab-expense' : 'personal-tab-income';
+      document.getElementById(nextId)?.focus();
+    }
+  };
+
   const resetForm = () => {
     setAmount('');
     setTitle('');
@@ -123,62 +133,104 @@ export const AddPersonalTransactionModal = ({
     }
   };
 
-  if (!isOpen) return null;
-
   const currentCategories = categories.filter((c) => c.category_type === transactionType);
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 overflow-y-auto">
-        {/* Semi-transparent Backdrop Overlay */}
+      {isOpen && (
         <motion.div
-          variants={modalBackdropVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
-          onClick={loading ? undefined : onClose}
-          aria-hidden="true"
-        />
-
-        {/* Centering Dialog Container */}
-        <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center pointer-events-none">
+          key="add-personal-modal-root"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
+          className="fixed inset-0 z-50 overflow-y-auto"
+        >
+          {/* Semi-transparent Backdrop Overlay */}
           <motion.div
-            variants={modalDialogVariants}
+            variants={modalBackdropVariants}
             initial="initial"
             animate="animate"
             exit="exit"
-            role="dialog"
-            aria-modal="true"
-            className="pointer-events-auto w-full max-w-lg transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 text-left align-middle shadow-2xl border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            onClick={loading ? undefined : onClose}
+            aria-hidden="true"
+          />
+
+          {/* Centering Dialog Container */}
+          <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center pointer-events-none">
+            <motion.div
+              variants={modalDialogVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              role="dialog"
+              aria-modal="true"
+              className="pointer-events-auto w-full max-w-lg transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 text-left align-middle shadow-2xl border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Header: Segmented Type Selector & Close Button */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl">
+              {/* Segmented Switch: Expense / Income */}
+              <div
+                role="tablist"
+                aria-label="Transaction Type"
+                className="relative grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl select-none"
+              >
+                {/* Single Shared Animated Active Indicator */}
+                <motion.div
+                  className="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-lg shadow-xs pointer-events-none"
+                  initial={false}
+                  animate={{
+                    x: transactionType === 'EXPENSE' ? '0%' : '100%',
+                    backgroundColor: transactionType === 'EXPENSE' ? '#e11d48' : '#059669',
+                  }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 450,
+                    damping: 35,
+                    mass: 0.8,
+                  }}
+                />
+
+                {/* Expense Tab Button */}
                 <button
                   type="button"
+                  role="tab"
+                  id="personal-tab-expense"
+                  aria-selected={transactionType === 'EXPENSE'}
+                  aria-controls="personal-transaction-form"
+                  tabIndex={transactionType === 'EXPENSE' ? 0 : -1}
                   onClick={() => setTransactionType('EXPENSE')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  onKeyDown={(e) => handleTabKeyDown(e, 'EXPENSE')}
+                  className={`relative z-10 w-24 sm:w-28 py-1.5 flex items-center justify-center gap-1.5 text-xs font-bold rounded-lg transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-offset-slate-900 ${
                     transactionType === 'EXPENSE'
-                      ? 'bg-rose-600 text-white shadow-xs'
+                      ? 'text-white'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <ArrowDownLeft className="w-3.5 h-3.5" />
-                  Expense
+                  <ArrowDownLeft className="w-3.5 h-3.5 shrink-0" />
+                  <span>Expense</span>
                 </button>
+
+                {/* Income Tab Button */}
                 <button
                   type="button"
+                  role="tab"
+                  id="personal-tab-income"
+                  aria-selected={transactionType === 'INCOME'}
+                  aria-controls="personal-transaction-form"
+                  tabIndex={transactionType === 'INCOME' ? 0 : -1}
                   onClick={() => setTransactionType('INCOME')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  onKeyDown={(e) => handleTabKeyDown(e, 'INCOME')}
+                  className={`relative z-10 w-24 sm:w-28 py-1.5 flex items-center justify-center gap-1.5 text-xs font-bold rounded-lg transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 dark:focus-visible:ring-offset-slate-900 ${
                     transactionType === 'INCOME'
-                      ? 'bg-emerald-600 text-white shadow-xs'
+                      ? 'text-white'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                  Income
+                  <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
+                  <span>Income</span>
                 </button>
               </div>
 
@@ -208,7 +260,7 @@ export const AddPersonalTransactionModal = ({
               </div>
             )}
 
-            <form onSubmit={(e) => handleSubmit(e, false)} className="mt-4 space-y-4">
+            <form id="personal-transaction-form" onSubmit={(e) => handleSubmit(e, false)} className="mt-4 space-y-4">
               {/* Prominent Amount Input with Quick Increments */}
               <div
                 className={`p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border transition-all duration-150 ${
@@ -404,8 +456,9 @@ export const AddPersonalTransactionModal = ({
             </form>
           </motion.div>
         </div>
-      </div>
-    </AnimatePresence>
+      </motion.div>
+    )}
+  </AnimatePresence>
   );
 };
 

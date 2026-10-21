@@ -33,32 +33,38 @@ export const DeletePersonalTransactionModal = ({
     }
   };
 
-  if (!isOpen || !transaction) return null;
-
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 overflow-y-auto">
+      {isOpen && transaction && (
         <motion.div
-          variants={modalBackdropVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
-          onClick={loading ? undefined : onClose}
-          aria-hidden="true"
-        />
-
-        <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center pointer-events-none">
+          key="delete-personal-modal-root"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
+          className="fixed inset-0 z-50 overflow-y-auto"
+        >
           <motion.div
-            variants={modalDialogVariants}
+            variants={modalBackdropVariants}
             initial="initial"
             animate="animate"
             exit="exit"
-            role="dialog"
-            aria-modal="true"
-            className="pointer-events-auto w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 text-left align-middle shadow-2xl border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            onClick={loading ? undefined : onClose}
+            aria-hidden="true"
+          />
+
+          <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center pointer-events-none">
+            <motion.div
+              variants={modalDialogVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              role="dialog"
+              aria-modal="true"
+              className="pointer-events-auto w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 text-left align-middle shadow-2xl border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
             <div className="flex items-start justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center shrink-0">
@@ -125,8 +131,9 @@ export const DeletePersonalTransactionModal = ({
             </div>
           </motion.div>
         </div>
-      </div>
-    </AnimatePresence>
+      </motion.div>
+    )}
+  </AnimatePresence>
   );
 };
 

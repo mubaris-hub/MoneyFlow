@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
@@ -101,16 +102,22 @@ export const Sidebar = ({ isOpen, onClose }) => {
   return (
     <>
       {/* Mobile overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs md:hidden"
-          onClick={onClose}
-        />
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs md:hidden"
+            onClick={onClose}
+          />
+        )}
+      </AnimatePresence>
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-r border-slate-200/80 dark:border-slate-800/80 flex flex-col transition-colors duration-150 ease-in-out md:translate-x-0 md:static ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-r border-slate-200/80 dark:border-slate-800/80 flex flex-col transition-all duration-200 ease-out md:translate-x-0 md:static ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >
         {/* Brand Header */}
@@ -197,7 +204,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                         <>
                           {isGroupsActive && (
                             <motion.div
-                              layoutId="sidebarActivePill"
+                              layoutId="sidebarSubActivePill"
                               className="absolute inset-0 bg-emerald-600 rounded-lg shadow-xs"
                               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                             />
@@ -232,7 +239,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                         <>
                           {isSettlementsActive && (
                             <motion.div
-                              layoutId="sidebarActivePill"
+                              layoutId="sidebarSubActivePill"
                               className="absolute inset-0 bg-emerald-600 rounded-lg shadow-xs"
                               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                             />

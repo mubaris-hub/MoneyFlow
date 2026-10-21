@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 
@@ -8,6 +8,7 @@ export const Button = React.forwardRef(({
   variant = 'primary',
   size = 'md',
   isLoading = false,
+  loadingText,
   disabled = false,
   className = '',
   onClick,
@@ -25,28 +26,36 @@ export const Button = React.forwardRef(({
 
   const sizes = {
     sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2.5 text-sm',
-    lg: 'px-5 py-3 text-base',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-5 py-2.5 text-base',
   };
 
   const isDisabled = disabled || isLoading;
+
+  const handleClick = (e) => {
+    if (isDisabled) {
+      e.preventDefault();
+      return;
+    }
+    if (onClick) onClick(e);
+  };
 
   return (
     <motion.button
       ref={ref}
       type={type}
       disabled={isDisabled}
-      onClick={onClick}
-      whileTap={isDisabled ? undefined : { scale: 0.97 }}
-      transition={{ duration: 0.1, ease: 'easeOut' }}
+      onClick={handleClick}
+      whileTap={isDisabled ? undefined : { scale: 0.98 }}
+      transition={{ duration: 0.08, ease: 'easeOut' }}
       className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
       {...props}
     >
       {isLoading ? (
-        <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin text-current" />
-          <span>Processing...</span>
-        </>
+        <span className="inline-flex items-center justify-center">
+          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin text-current shrink-0" />
+          <span>{loadingText || children || 'Processing...'}</span>
+        </span>
       ) : (
         children
       )}

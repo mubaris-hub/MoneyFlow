@@ -47,6 +47,9 @@ export const SettlementsPage = () => {
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
   const [prefill, setPrefill] = useState(null);
 
+  // Active summary derived from loaded details or cached group summary for instant UI transitions
+  const activeSummary = summaryData || (selectedGroupId ? groupsSummary[selectedGroupId] : null);
+
   // Fetch all groups user belongs to
   const fetchGroups = useCallback(async () => {
     try {
@@ -322,7 +325,7 @@ export const SettlementsPage = () => {
       {selectedGroupId && (
         <div className="space-y-6 pt-2">
           {/* Details Loading State */}
-          {loadingDetails && (
+          {loadingDetails && !activeSummary && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[...Array(3)].map((_, i) => (
@@ -351,15 +354,15 @@ export const SettlementsPage = () => {
           )}
 
           {/* Details Content */}
-          {!loadingDetails && !detailsError && summaryData && (
-            <div className="space-y-6">
+          {!detailsError && activeSummary && (
+            <div className={`space-y-6 transition-opacity duration-150 ${loadingDetails ? 'opacity-70' : 'opacity-100'}`}>
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="p-4 flex items-center justify-between border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl">
                   <div>
                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Group Total Spent</p>
                     <p className="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">
-                      {formatINR(summaryData.total_spent)}
+                      {formatINR(activeSummary.total_spent)}
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0">
@@ -371,7 +374,7 @@ export const SettlementsPage = () => {
                   <div>
                     <p className="text-xs font-semibold text-rose-700 dark:text-rose-400">You Owe</p>
                     <p className="text-xl font-extrabold text-rose-700 dark:text-rose-400 mt-0.5">
-                      {formatINR(summaryData.you_owe)}
+                      {formatINR(activeSummary.you_owe)}
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-400 flex items-center justify-center shrink-0">
@@ -383,7 +386,7 @@ export const SettlementsPage = () => {
                   <div>
                     <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">You Are Owed</p>
                     <p className="text-xl font-extrabold text-emerald-700 dark:text-emerald-400 mt-0.5">
-                      {formatINR(summaryData.you_are_owed)}
+                      {formatINR(activeSummary.you_are_owed)}
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
@@ -394,7 +397,7 @@ export const SettlementsPage = () => {
 
               {/* Smart Settle Suggested Settlements */}
               <SmartSettleWidget
-                suggestedSettlements={summaryData.suggested_settlements}
+                suggestedSettlements={activeSummary.suggested_settlements}
                 onSettleClick={handleOpenSettleModal}
               />
 
@@ -405,12 +408,12 @@ export const SettlementsPage = () => {
                     Member Balances Breakdown
                   </h3>
                   <span className="text-xs text-slate-500 dark:text-slate-400">
-                    {summaryData.member_balances?.length || 0} Members
+                    {activeSummary.member_balances?.length || 0} Members
                   </span>
                 </div>
 
                 <Card className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">
-                  {summaryData.member_balances?.map((mb) => {
+                  {activeSummary.member_balances?.map((mb) => {
                     const isSelf = String(mb.user.id) === String(user?.id);
 
                     return (

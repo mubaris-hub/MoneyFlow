@@ -12,7 +12,7 @@ export const Card = ({
 
   return (
     <div
-      className={`bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl shadow-xs p-5 transition-all duration-200 ease-out ${hoverStyles} ${className}`}
+      className={`bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl shadow-xs p-5 transition-[box-shadow,border-color,background-color,transform] duration-200 ease-out ${hoverStyles} ${className}`}
       {...props}
     >
       {children}

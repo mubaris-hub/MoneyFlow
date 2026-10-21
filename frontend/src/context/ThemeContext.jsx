@@ -33,10 +33,13 @@ export const ThemeProvider = ({ children }) => {
     return theme;
   });
 
-  // Apply theme class to document root
-  const applyTheme = useCallback((activeTheme) => {
+  // Apply theme class to document root with subtle crossfade
+  const applyTheme = useCallback((activeTheme, withTransition = false) => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
+    if (withTransition) {
+      root.classList.add('theme-transition');
+    }
     if (activeTheme === 'dark') {
       root.classList.add('dark');
       root.style.colorScheme = 'dark';
@@ -45,6 +48,11 @@ export const ThemeProvider = ({ children }) => {
       root.classList.remove('dark');
       root.style.colorScheme = 'light';
       root.setAttribute('data-theme', 'light');
+    }
+    if (withTransition) {
+      setTimeout(() => {
+        root.classList.remove('theme-transition');
+      }, 180);
     }
   }, []);
 
@@ -60,7 +68,7 @@ export const ThemeProvider = ({ children }) => {
 
     const calculated = newTheme === 'system' ? getSystemTheme() : newTheme;
     setResolvedTheme(calculated);
-    applyTheme(calculated);
+    applyTheme(calculated, true);
   }, [getSystemTheme, applyTheme]);
 
   // Initial and reactive effect

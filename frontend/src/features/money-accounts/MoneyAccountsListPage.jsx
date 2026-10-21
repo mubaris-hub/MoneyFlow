@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import useAuth from '../../hooks/useAuth';
 import moneyAccountService from '../../services/moneyAccount.service';
 import Card from '../../components/ui/Card';
@@ -84,26 +85,40 @@ export const MoneyAccountsListPage = () => {
       <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800">
         <button
           onClick={() => setActiveTab('managed')}
-          className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`relative pb-3 px-4 text-sm font-bold transition-colors flex items-center gap-2 cursor-pointer ${
             activeTab === 'managed'
-              ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
           }`}
         >
           <Shield className="w-4 h-4" />
-          Accounts I Manage ({managedAccounts.length})
+          <span>Accounts I Manage ({managedAccounts.length})</span>
+          {activeTab === 'managed' && (
+            <motion.div
+              layoutId="moneyAccountActiveTab"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+              transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+            />
+          )}
         </button>
 
         <button
           onClick={() => setActiveTab('owned')}
-          className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`relative pb-3 px-4 text-sm font-bold transition-colors flex items-center gap-2 cursor-pointer ${
             activeTab === 'owned'
-              ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
           }`}
         >
           <Wallet className="w-4 h-4" />
-          Money Held For Me ({ownedAccounts.length})
+          <span>Money Held For Me ({ownedAccounts.length})</span>
+          {activeTab === 'owned' && (
+            <motion.div
+              layoutId="moneyAccountActiveTab"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400"
+              transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+            />
+          )}
         </button>
       </div>
 
@@ -148,7 +163,13 @@ export const MoneyAccountsListPage = () => {
 
       {/* Account Cards Grid */}
       {!loading && !error && currentTabAccounts.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 3 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
           {currentTabAccounts.map((account) => {
             const summary = account.balance_summary || {};
             const balance = summary.balance || '0.00';
@@ -202,7 +223,7 @@ export const MoneyAccountsListPage = () => {
               </Card>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       {/* Modal */}

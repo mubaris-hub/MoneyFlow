@@ -81,36 +81,42 @@ export const EditPersonalTransactionModal = ({
     }
   };
 
-  if (!isOpen || !transaction) return null;
-
-  const currentCategories = categories.filter(
-    (c) => c.category_type === transaction.transaction_type
-  );
+  const currentCategories = transaction
+    ? categories.filter((c) => c.category_type === transaction.transaction_type)
+    : [];
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 overflow-y-auto">
+      {isOpen && transaction && (
         <motion.div
-          variants={modalBackdropVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
-          onClick={loading ? undefined : onClose}
-          aria-hidden="true"
-        />
-
-        <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center pointer-events-none">
+          key="edit-personal-modal-root"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
+          className="fixed inset-0 z-50 overflow-y-auto"
+        >
           <motion.div
-            variants={modalDialogVariants}
+            variants={modalBackdropVariants}
             initial="initial"
             animate="animate"
             exit="exit"
-            role="dialog"
-            aria-modal="true"
-            className="pointer-events-auto w-full max-w-lg transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 text-left align-middle shadow-2xl border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            onClick={loading ? undefined : onClose}
+            aria-hidden="true"
+          />
+
+          <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center pointer-events-none">
+            <motion.div
+              variants={modalDialogVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              role="dialog"
+              aria-modal="true"
+              className="pointer-events-auto w-full max-w-lg transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 text-left align-middle shadow-2xl border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 Edit {transaction.transaction_type === 'EXPENSE' ? 'Expense' : 'Income'}
@@ -244,8 +250,9 @@ export const EditPersonalTransactionModal = ({
             </form>
           </motion.div>
         </div>
-      </div>
-    </AnimatePresence>
+      </motion.div>
+    )}
+  </AnimatePresence>
   );
 };
 

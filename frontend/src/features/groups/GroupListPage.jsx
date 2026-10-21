@@ -127,7 +127,7 @@ export const GroupListPage = () => {
                 setJoinCode(e.target.value.toUpperCase());
                 if (joinError) setJoinError('');
               }}
-              className="px-3.5 py-2 text-xs font-mono font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:outline-hidden focus:border-emerald-500 uppercase placeholder:normal-case placeholder:font-normal"
+              className="px-3.5 py-2 text-xs font-mono font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:border-emerald-500 uppercase placeholder:normal-case placeholder:font-normal"
             />
             <Button type="submit" variant="primary" size="md" isLoading={joinLoading}>
               Join

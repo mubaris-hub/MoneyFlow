@@ -63,6 +63,22 @@ export const pageTransitionVariants = {
   },
 };
 
+// Flowing directional page transition for connected navigation
+export const flowingPageVariants = {
+  initial: (direction = 0) => ({
+    opacity: 0,
+    x: direction > 0 ? 12 : direction < 0 ? -12 : 0,
+  }),
+  animate: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.24,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
+
 // 5. Modal / Centered Dialog Transition
 export const modalBackdropVariants = {
   initial: { opacity: 0 },

@@ -107,14 +107,14 @@ export const DeletePersonalTransactionModal = ({
             )}
 
             <div className="py-4 space-y-2">
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                <div>
-                  <p className="font-bold text-slate-900 dark:text-white text-sm">{transaction.title}</p>
-                  <p className="text-slate-500 dark:text-slate-400 mt-0.5">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-slate-900 dark:text-white text-sm truncate">{transaction.title}</p>
+                  <p className="text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                     {formatDate(transaction.date)} • {transaction.category_name || 'Uncategorized'}
                   </p>
                 </div>
-                <span className={`text-base font-extrabold ${
+                <span className={`text-sm sm:text-base font-extrabold shrink-0 tabular-nums whitespace-nowrap text-right ${
                   transaction.transaction_type === 'EXPENSE' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                 }`}>
                   {transaction.transaction_type === 'EXPENSE' ? '-' : '+'}{formatCurrency(transaction.amount)}

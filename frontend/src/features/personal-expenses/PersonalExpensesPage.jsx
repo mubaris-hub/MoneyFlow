@@ -662,16 +662,16 @@ export const PersonalExpensesPage = () => {
                 return (
                   <div key={dateKey} className="space-y-2">
                     {/* Date Section Header */}
-                    <div className="flex items-center justify-between px-1 text-xs font-bold text-slate-500 dark:text-slate-400">
-                      <span>{getDayHeading(dateKey)}</span>
-                      <div className="flex items-center gap-3 text-[11px]">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 px-1 text-xs font-bold text-slate-500 dark:text-slate-400">
+                      <span className="shrink-0">{getDayHeading(dateKey)}</span>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] justify-end">
                         {dayTotalExpense > 0 && (
-                          <span className="text-rose-600 dark:text-rose-400 font-semibold">
+                          <span className="text-rose-600 dark:text-rose-400 font-semibold whitespace-nowrap">
                             Spent: -{formatCurrency(dayTotalExpense)}
                           </span>
                         )}
                         {dayTotalIncome > 0 && (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold whitespace-nowrap">
                             Received: +{formatCurrency(dayTotalIncome)}
                           </span>
                         )}
@@ -683,82 +683,196 @@ export const PersonalExpensesPage = () => {
                       {dayTxs.map((tx) => {
                         const isExpense = tx.transaction_type === 'EXPENSE';
                         const catDetail = tx.category_detail || {};
+                        const numAmount = Math.abs(parseFloat(tx.amount || 0));
+                        const isLargeAmount = numAmount >= 100000; // ₹1,00,000+
+                        const isVeryLargeAmount = numAmount >= 10000000; // ₹1,00,00,000+
 
                         return (
                           <div
                             key={tx.id}
-                            className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group"
+                            className="p-3.5 sm:p-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group"
                           >
-                            {/* Left: Icon & Details */}
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div
-                                style={{ backgroundColor: `${catDetail.color || '#64748B'}15` }}
-                                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-slate-200/50 dark:border-slate-700/50"
-                              >
-                                <span style={{ color: catDetail.color || '#64748B' }}>
-                                  {getCategoryIcon(catDetail.icon, 'w-5 h-5')}
-                                </span>
-                              </div>
-
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                                    {tx.title}
-                                  </p>
-                                  <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                                    {getPaymentMethodIcon(tx.payment_method)}
-                                    {tx.payment_method}
+                            {/* MOBILE LAYOUT (< sm screens: 320px - 639px): 2 Dedicated Rows */}
+                            <div className="flex sm:hidden flex-col gap-2.5">
+                              {/* Mobile Row 1: Category Icon + Title & Category + Action Buttons */}
+                              <div className="flex items-start justify-between gap-2.5 min-w-0">
+                                {/* Category Icon */}
+                                <div
+                                  style={{ backgroundColor: `${catDetail.color || '#64748B'}15` }}
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-slate-200/50 dark:border-slate-700/50 mt-0.5"
+                                >
+                                  <span style={{ color: catDetail.color || '#64748B' }}>
+                                    {getCategoryIcon(catDetail.icon, 'w-5 h-5')}
                                   </span>
                                 </div>
 
-                                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                  <span>{tx.category_name || 'Uncategorized'}</span>
-                                  {tx.time && (
-                                    <>
-                                      <span>•</span>
-                                      <span className="flex items-center gap-0.5 text-[11px]">
-                                        <Clock className="w-3 h-3" />
-                                        {tx.time.slice(0, 5)}
+                                {/* Title, Category & Payment Method */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug break-words">
+                                    {tx.title}
+                                  </p>
+                                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    <span className="font-medium text-slate-600 dark:text-slate-300">
+                                      {tx.category_name || 'Uncategorized'}
+                                    </span>
+                                    {tx.payment_method && (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                        {getPaymentMethodIcon(tx.payment_method)}
+                                        {tx.payment_method}
                                       </span>
-                                    </>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Action Buttons: Dedicated Area on Top Right */}
+                                <div className="flex items-center gap-0.5 shrink-0 -mr-1 -mt-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => { setSelectedTxForEdit(tx); setIsEditModalOpen(true); }}
+                                    className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 active:bg-slate-100 dark:active:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                                    title="Edit"
+                                    aria-label="Edit transaction"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setSelectedTxForDelete(tx); setIsDeleteModalOpen(true); }}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 active:bg-rose-50 dark:active:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                                    title="Delete"
+                                    aria-label="Delete transaction"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Mobile Row 2: Timestamp & Notes (Left) + Full Amount (Right) */}
+                              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pl-[50px] pt-1.5 border-t border-slate-100/70 dark:border-slate-800/70">
+                                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 min-w-0">
+                                  {tx.time ? (
+                                    <span className="flex items-center gap-1 shrink-0 font-medium text-slate-500 dark:text-slate-400">
+                                      <Clock className="w-3 h-3 text-slate-400" />
+                                      {tx.time.slice(0, 5)}
+                                    </span>
+                                  ) : (
+                                    <span className="shrink-0">{formatDate(tx.date)}</span>
                                   )}
                                   {tx.notes && (
-                                    <>
-                                      <span className="hidden md:inline">•</span>
-                                      <span className="hidden md:inline truncate max-w-xs text-slate-400">
-                                        {tx.notes}
-                                      </span>
-                                    </>
+                                    <span className="truncate max-w-[140px] text-slate-400">
+                                      • {tx.notes}
+                                    </span>
                                   )}
+                                </div>
+
+                                {/* Dedicated Amount Area - Never Overlaps or Clips */}
+                                <div className="ml-auto shrink-0 text-right">
+                                  <span
+                                    className={`font-extrabold tracking-tight tabular-nums whitespace-nowrap block ${
+                                      isVeryLargeAmount
+                                        ? 'text-xs'
+                                        : isLargeAmount
+                                        ? 'text-sm'
+                                        : 'text-base'
+                                    } ${
+                                      isExpense
+                                        ? 'text-rose-600 dark:text-rose-400'
+                                        : 'text-emerald-600 dark:text-emerald-400'
+                                    }`}
+                                  >
+                                    {isExpense ? '-' : '+'}{formatCurrency(tx.amount)}
+                                  </span>
                                 </div>
                               </div>
                             </div>
 
-                            {/* Right: Amount & Action Buttons */}
-                            <div className="flex items-center gap-3 shrink-0">
-                              <span className={`text-base font-extrabold tracking-tight ${
-                                isExpense ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
-                              }`}>
-                                {isExpense ? '-' : '+'}{formatCurrency(tx.amount)}
-                              </span>
+                            {/* DESKTOP & TABLET LAYOUT (>= sm screens): Balanced Single Row */}
+                            <div className="hidden sm:flex items-center justify-between gap-4">
+                              {/* Left: Icon & Details */}
+                              <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                <div
+                                  style={{ backgroundColor: `${catDetail.color || '#64748B'}15` }}
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-slate-200/50 dark:border-slate-700/50"
+                                >
+                                  <span style={{ color: catDetail.color || '#64748B' }}>
+                                    {getCategoryIcon(catDetail.icon, 'w-5 h-5')}
+                                  </span>
+                                </div>
 
-                              <div className="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  type="button"
-                                  onClick={() => { setSelectedTxForEdit(tx); setIsEditModalOpen(true); }}
-                                  className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                                  title="Edit"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { setSelectedTxForDelete(tx); setIsDeleteModalOpen(true); }}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                      {tx.title}
+                                    </p>
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
+                                      {getPaymentMethodIcon(tx.payment_method)}
+                                      {tx.payment_method}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    <span className="shrink-0">{tx.category_name || 'Uncategorized'}</span>
+                                    {tx.time && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="flex items-center gap-0.5 text-[11px] shrink-0">
+                                          <Clock className="w-3 h-3" />
+                                          {tx.time.slice(0, 5)}
+                                        </span>
+                                      </>
+                                    )}
+                                    {tx.notes && (
+                                      <>
+                                        <span className="hidden md:inline">•</span>
+                                        <span className="hidden md:inline truncate max-w-xs text-slate-400">
+                                          {tx.notes}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Right: Amount & Action Buttons */}
+                              <div className="flex items-center gap-3.5 shrink-0">
+                                <div className="text-right">
+                                  <span
+                                    className={`font-extrabold tracking-tight tabular-nums whitespace-nowrap block ${
+                                      isVeryLargeAmount
+                                        ? 'text-sm'
+                                        : isLargeAmount
+                                        ? 'text-base'
+                                        : 'text-lg'
+                                    } ${
+                                      isExpense
+                                        ? 'text-rose-600 dark:text-rose-400'
+                                        : 'text-emerald-600 dark:text-emerald-400'
+                                    }`}
+                                  >
+                                    {isExpense ? '-' : '+'}{formatCurrency(tx.amount)}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                  <button
+                                    type="button"
+                                    onClick={() => { setSelectedTxForEdit(tx); setIsEditModalOpen(true); }}
+                                    className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                                    title="Edit"
+                                    aria-label="Edit transaction"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setSelectedTxForDelete(tx); setIsDeleteModalOpen(true); }}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                                    title="Delete"
+                                    aria-label="Delete transaction"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>

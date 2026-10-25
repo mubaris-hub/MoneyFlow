@@ -10,7 +10,7 @@ import { flowingPageVariants } from '../../utils/animations';
 const SECTION_ROUTES = [
   (path) => path === '/' || path.startsWith('/dashboard'),
   (path) => path.startsWith('/personal-expenses'),
-  (path) => path.startsWith('/groups') || path.startsWith('/settlements'),
+  (path) => path.startsWith('/money-accounts') || path.startsWith('/groups') || path.startsWith('/settlements'),
   (path) => path.startsWith('/transactions'),
   (path) => path.startsWith('/settings'),
 ];

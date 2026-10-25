@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import {
   Home,
   Wallet,
-  Users,
+  BookOpen,
   ArrowLeftRight,
   Settings,
 } from 'lucide-react';
@@ -23,10 +23,10 @@ const NAV_ITEMS = [
     isActive: (pathname) => pathname.startsWith('/personal-expenses'),
   },
   {
-    name: 'Groups',
-    to: '/groups',
-    icon: Users,
-    isActive: (pathname) => pathname.startsWith('/groups') || pathname.startsWith('/settlements'),
+    name: 'Friend Ledger',
+    to: '/money-accounts',
+    icon: BookOpen,
+    isActive: (pathname) => pathname.startsWith('/money-accounts'),
   },
   {
     name: 'Transactions',

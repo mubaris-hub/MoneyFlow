@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 
 from django.contrib.auth import get_user_model
 from apps.notifications.services import NotificationService
@@ -338,9 +339,10 @@ class MoneyAccountService:
             return tx
 
     @staticmethod
-    def create_invitation(account_id, sender) -> AccountInvitation:
+    def create_invitation(account_id, sender, recipient_email: str = None) -> AccountInvitation:
         """
         Generates a cryptographically secure, expiring invitation token for the owner.
+        Validates that recipient_email belongs to an existing registered user.
         """
         with transaction.atomic():
             account = MoneyAccount.objects.select_for_update().get(id=account_id)
@@ -351,6 +353,39 @@ class MoneyAccountService:
             if account.status == 'CLOSED':
                 raise ValidationError("Cannot invite users to a closed account.")
 
+            # Resolve, clean, and validate email
+            raw_email = recipient_email if recipient_email is not None else account.owner_email
+            email = (raw_email or '').strip()
+            if not email:
+                raise ValidationError("Recipient email is required.")
+
+            try:
+                validate_email(email)
+            except ValidationError:
+                raise ValidationError("Please enter a valid email address.")
+
+            normalized_email = email.lower()
+
+            # Verify that recipient email belongs to an existing registered MoneyFlow user
+            User = get_user_model()
+            target_user = User.objects.filter(email__iexact=normalized_email).first()
+            if not target_user:
+                raise ValidationError(
+                    "This email is not registered with MoneyFlow. Please enter an email address associated with an existing account."
+                )
+
+            # Recipient eligibility checks
+            if target_user == sender:
+                raise ValidationError("You cannot invite yourself to manage or own your account.")
+
+            if account.owner and account.owner != target_user:
+                raise ValidationError("This account is already linked to another registered owner.")
+
+            # Update account owner_email if changed
+            if account.owner_email.lower() != normalized_email:
+                account.owner_email = normalized_email
+                account.save(update_fields=['owner_email'])
+
             # Invalidate any existing pending invitations
             account.invitations.filter(status='PENDING').update(status='EXPIRED')
 
@@ -360,14 +395,14 @@ class MoneyAccountService:
             invitation = AccountInvitation.objects.create(
                 account=account,
                 sender=sender,
-                recipient_email=account.owner_email.lower(),
+                recipient_email=normalized_email,
                 token=token,
                 status='PENDING',
                 expires_at=expires_at
             )
 
             account.status = 'INVITED'
-            account.save()
+            account.save(update_fields=['status'])
 
             AccountAuditLog.objects.create(
                 account=account,
@@ -375,27 +410,22 @@ class MoneyAccountService:
                 action='INVITATION_SENT',
                 details={
                     'invitation_id': str(invitation.id),
-                    'recipient_email': account.owner_email,
+                    'recipient_email': normalized_email,
+                    'recipient_user_id': str(target_user.id),
                     'expires_at': expires_at.isoformat()
                 }
             )
 
-            try:
-                User = get_user_model()
-                target_user = User.objects.get(email__iexact=account.owner_email.lower())
-                if target_user != sender:
-                    sender_name = sender.first_name or sender.email
-                    NotificationService.create_notification(
-                        recipient=target_user,
-                        notification_type='MONEY_ACCOUNT_INVITED',
-                        title='Money Account Invitation',
-                        message=f"{sender_name} invited you to view the Money Account '{account.title}'.",
-                        money_account=account,
-                        invitation=invitation,
-                        actor=sender
-                    )
-            except Exception:
-                pass
+            sender_name = sender.first_name or sender.email
+            NotificationService.create_notification(
+                recipient=target_user,
+                notification_type='MONEY_ACCOUNT_INVITED',
+                title='Money Account Invitation',
+                message=f"{sender_name} invited you to view the Money Account '{account.title}'.",
+                money_account=account,
+                invitation=invitation,
+                actor=sender
+            )
 
             return invitation
 

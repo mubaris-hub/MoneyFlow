@@ -3,6 +3,7 @@ import Modal from '../../components/ui/Modal';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { formatCurrency, formatDate, getInitials } from '../../utils/formatters';
+import { resolveApiUrl } from '../../services/api';
 import {
   Receipt,
   ArrowRightLeft,
@@ -242,9 +243,18 @@ export const TransactionDetailModal = ({ isOpen, onClose, transaction }) => {
                 </div>
               </div>
               <a
-                href={transaction.receipt_url}
+                href={(() => {
+                  const url = transaction.receipt_url;
+                  if (!url) return '#';
+                  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+                  const resolved = resolveApiUrl(url);
+                  const token = localStorage.getItem('access_token');
+                  return token && resolved.includes('/transactions/')
+                    ? `${resolved}?token=${encodeURIComponent(token)}`
+                    : resolved;
+                })()}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-xs"
               >
                 View File <ExternalLink className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />

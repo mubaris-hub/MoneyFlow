@@ -82,7 +82,11 @@ class AccountTransactionSerializer(serializers.ModelSerializer):
 
     def get_receipt_image_url(self, obj):
         if obj.receipt_image:
-            return f"/api/v1/money-accounts/{obj.account_id}/transactions/{obj.id}/receipt/"
+            path = f"/api/v1/money-accounts/{obj.account_id}/transactions/{obj.id}/receipt/"
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(path)
+            return path
         return None
 
 

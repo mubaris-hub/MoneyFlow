@@ -1,5 +1,6 @@
 import csv
 import io
+import os
 import mimetypes
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
@@ -10,6 +11,7 @@ from rest_framework import status, permissions, parsers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError as DRFValidationError
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .models import (
     MoneyAccount,
@@ -149,7 +151,7 @@ class AccountTransactionListCreateView(APIView):
         if date_val:
             txs = txs.filter(date=date_val)
 
-        serializer = AccountTransactionSerializer(txs, many=True)
+        serializer = AccountTransactionSerializer(txs, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, pk):
@@ -179,13 +181,33 @@ class AccountTransactionListCreateView(APIView):
                 receipt_url=serializer.validated_data.get('receipt_url'),
                 receipt_image=serializer.validated_data.get('receipt_image') or request.FILES.get('receipt_image')
             )
-            res_serializer = AccountTransactionSerializer(tx)
+            res_serializer = AccountTransactionSerializer(tx, context={'request': request})
             return Response(res_serializer.data, status=status.HTTP_201_CREATED)
         except DjangoValidationError as e:
             raise DRFValidationError(e.message if hasattr(e, 'message') else str(e))
 
 
+class QueryParamJWTAuthentication(JWTAuthentication):
+    """
+    Extends JWTAuthentication to allow authenticating via '?token=<token>' query parameter,
+    enabling direct browser tab viewing of protected media receipts while maintaining JWT security.
+    """
+    def authenticate(self, request):
+        header = self.get_header(request)
+        if header is not None:
+            raw_token = self.get_raw_token(header)
+        else:
+            raw_token = request.query_params.get('token')
+
+        if raw_token is None:
+            return None
+
+        validated_token = self.get_validated_token(raw_token)
+        return self.get_user(validated_token), validated_token
+
+
 class TransactionReceiptView(APIView):
+    authentication_classes = [QueryParamJWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
@@ -202,9 +224,15 @@ class TransactionReceiptView(APIView):
         if not tx.receipt_image:
             raise Http404("No receipt image attached to this transaction.")
 
-        content_type, _ = mimetypes.guess_type(tx.receipt_image.path)
-        content_type = content_type or 'application/octet-stream'
-        return FileResponse(tx.receipt_image.open('rb'), content_type=content_type)
+        try:
+            filename = tx.receipt_image.name
+            content_type, _ = mimetypes.guess_type(filename)
+            content_type = content_type or 'application/octet-stream'
+            response = FileResponse(tx.receipt_image.open('rb'), content_type=content_type)
+            response['Content-Disposition'] = f'inline; filename="{os.path.basename(filename)}"'
+            return response
+        except (FileNotFoundError, ValueError):
+            raise Http404("Receipt image file not found on storage.")
 
     def post(self, request, pk, tx_id):
         """Replace/upload receipt image (Manager only)."""
@@ -222,7 +250,7 @@ class TransactionReceiptView(APIView):
                 manager=request.user,
                 receipt_image=receipt_file
             )
-            serializer = AccountTransactionSerializer(updated_tx)
+            serializer = AccountTransactionSerializer(updated_tx, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
         except DjangoValidationError as e:
             raise DRFValidationError(e.message if hasattr(e, 'message') else str(e))
@@ -239,7 +267,7 @@ class TransactionReceiptView(APIView):
                 manager=request.user,
                 remove_receipt=True
             )
-            serializer = AccountTransactionSerializer(updated_tx)
+            serializer = AccountTransactionSerializer(updated_tx, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
         except DjangoValidationError as e:
             raise DRFValidationError(e.message if hasattr(e, 'message') else str(e))
@@ -280,10 +308,13 @@ class InviteOwnerView(APIView):
         if account.manager != request.user:
             raise PermissionDenied("Only the account manager can send invitations.")
 
+        email = request.data.get('email') or request.data.get('recipient_email') or account.owner_email
+
         try:
             invitation = MoneyAccountService.create_invitation(
                 account_id=account.id,
-                sender=request.user
+                sender=request.user,
+                recipient_email=email
             )
             serializer = AccountInvitationSerializer(invitation)
             data = serializer.data
@@ -291,7 +322,8 @@ class InviteOwnerView(APIView):
             data['token'] = invitation.token
             return Response(data, status=status.HTTP_201_CREATED)
         except DjangoValidationError as e:
-            raise DRFValidationError(e.message if hasattr(e, 'message') else str(e))
+            err_msg = e.message if hasattr(e, 'message') else str(e)
+            raise DRFValidationError({"detail": err_msg, "email": err_msg})
 
 
 class RespondInvitationView(APIView):

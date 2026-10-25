@@ -1,4 +1,4 @@
-import api from './api';
+import api, { resolveApiUrl } from './api';
 
 export const moneyAccountService = {
   // Account CRUD & details
@@ -58,6 +58,20 @@ export const moneyAccountService = {
   },
 
   // Receipts
+  getReceiptBlob: async (accountId, txId) => {
+    const response = await api.get(`/money-accounts/${accountId}/transactions/${txId}/receipt/`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  getReceiptDirectUrl: (accountId, txId) => {
+    const token = localStorage.getItem('access_token');
+    const directPath = `/money-accounts/${accountId}/transactions/${txId}/receipt/`;
+    const resolved = resolveApiUrl(directPath);
+    return token ? `${resolved}?token=${encodeURIComponent(token)}` : resolved;
+  },
+
   replaceReceipt: async (accountId, txId, file) => {
     const formData = new FormData();
     formData.append('receipt_image', file);
@@ -73,8 +87,8 @@ export const moneyAccountService = {
   },
 
   // Invitation & Lifecycle
-  inviteOwner: async (accountId) => {
-    const response = await api.post(`/money-accounts/${accountId}/invite/`);
+  inviteOwner: async (accountId, data = {}) => {
+    const response = await api.post(`/money-accounts/${accountId}/invite/`, data);
     return response.data;
   },
 

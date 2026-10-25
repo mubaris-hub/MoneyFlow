@@ -7,9 +7,26 @@ const getDefaultApiBaseUrl = () => {
   return 'http://127.0.0.1:8000/api/v1';
 };
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   "http://localhost:8000/api/v1";
+
+/**
+ * Resolves a relative endpoint or URL against API_BASE_URL,
+ * avoiding duplicate '/api/v1' paths and ensuring correct backend target.
+ */
+export const resolveApiUrl = (endpointOrUrl) => {
+  if (!endpointOrUrl) return '';
+  if (endpointOrUrl.startsWith('http://') || endpointOrUrl.startsWith('https://')) {
+    return endpointOrUrl;
+  }
+  const cleanBase = (API_BASE_URL || '').replace(/\/+$/, '');
+  const cleanEndpoint = endpointOrUrl.startsWith('/') ? endpointOrUrl : `/${endpointOrUrl}`;
+  if (cleanEndpoint.startsWith('/api/v1') && cleanBase.endsWith('/api/v1')) {
+    return `${cleanBase.slice(0, -7)}${cleanEndpoint}`;
+  }
+  return `${cleanBase}${cleanEndpoint}`;
+};
 
 const PUBLIC_ENDPOINTS = [
   '/auth/login',

@@ -584,6 +584,43 @@ class MoneyAccountAPITests(TestCase):
         self.assertEqual(res_acc.data['status'], 'ACTIVE')
         self.assertEqual(res_acc.data['owner']['username'], 'api_owner')
 
+    def test_invitation_requires_registered_user_email(self):
+        acc = MoneyAccountService.create_account(
+            manager=self.manager, title="Registered Email Fund", owner_name="Owner", owner_email="api_owner@example.com"
+        )
+        invite_url = reverse('money_account_invite', kwargs={'pk': acc.id})
+        self.authenticate(self.manager)
+
+        initial_count = AccountInvitation.objects.filter(account=acc).count()
+
+        # 1. Unregistered email rejection
+        res_unreg = self.client.post(invite_url, {'email': 'unregistered_person@nowhere.com'}, format='json')
+        self.assertEqual(res_unreg.status_code, status.HTTP_400_BAD_REQUEST)
+        errors = res_unreg.data.get('errors') or res_unreg.data
+        err_msg = errors.get('detail') or errors.get('email')
+        self.assertIn("This email is not registered with MoneyFlow", str(err_msg))
+        # Ensure no invitation or token was generated
+        self.assertEqual(AccountInvitation.objects.filter(account=acc).count(), initial_count)
+
+        # 2. Invalid email format
+        res_bad_fmt = self.client.post(invite_url, {'email': 'not-an-email'}, format='json')
+        self.assertEqual(res_bad_fmt.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(AccountInvitation.objects.filter(account=acc).count(), initial_count)
+
+        # 3. Self-invite rejection
+        res_self = self.client.post(invite_url, {'email': self.manager.email}, format='json')
+        self.assertEqual(res_self.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("cannot invite yourself", str(res_self.data))
+        self.assertEqual(AccountInvitation.objects.filter(account=acc).count(), initial_count)
+
+        # 4. Registered email (case-insensitive & trimmed) succeeds
+        res_success = self.client.post(invite_url, {'email': '  API_OWNER@EXAMPLE.COM  '}, format='json')
+        self.assertEqual(res_success.status_code, status.HTTP_201_CREATED)
+        self.assertIn('token', res_success.data)
+        self.assertEqual(AccountInvitation.objects.filter(account=acc).count(), initial_count + 1)
+        inv = AccountInvitation.objects.get(token=res_success.data['token'])
+        self.assertEqual(inv.recipient_email, 'api_owner@example.com')
+
     # W. Account closure at zero, X. Closure with balance, Y. Tx after closure
     def test_w_x_y_closure_and_post_closure(self):
         acc = MoneyAccountService.create_account(
@@ -770,6 +807,13 @@ class MoneyAccountReceiptTests(TestCase):
         self.authenticate(self.stranger)
         res_str = self.client.get(receipt_view_url)
         self.assertEqual(res_str.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 6. Query parameter token authentication (Manager or Owner via ?token=...)
+        from rest_framework_simplejwt.tokens import RefreshToken
+        manager_token = str(RefreshToken.for_user(self.manager).access_token)
+        self.client.force_authenticate(user=None)
+        res_query_token = self.client.get(f"{receipt_view_url}?token={manager_token}")
+        self.assertEqual(res_query_token.status_code, status.HTTP_200_OK)
 
     def test_receipt_replacement_and_removal(self):
         file_obj = SimpleUploadedFile("old.jpg", b"old_bytes", content_type="image/jpeg")

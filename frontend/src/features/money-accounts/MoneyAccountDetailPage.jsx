@@ -73,8 +73,8 @@ export const MoneyAccountDetailPage = () => {
     }
   };
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showSkeleton = false) => {
+    if (showSkeleton) setLoading(true);
     setError(null);
     try {
       const accData = await moneyAccountService.getAccount(id);
@@ -101,12 +101,12 @@ export const MoneyAccountDetailPage = () => {
       const msg = errData?.detail || errData?.errors?.detail || err.message || 'Failed to load account details.';
       setError(msg);
     } finally {
-      setLoading(false);
+      if (showSkeleton) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(true);
   }, [id, filterType, showVoided]);
 
   if (loading) {
@@ -452,7 +452,7 @@ export const MoneyAccountDetailPage = () => {
         onClose={() => setIsAddModalOpen(false)}
         accountId={id}
         defaultType={addDefaultType}
-        onTransactionAdded={() => fetchData()}
+        onTransactionAdded={() => fetchData(false)}
       />
 
       <VoidTransactionModal
@@ -460,14 +460,21 @@ export const MoneyAccountDetailPage = () => {
         onClose={() => setIsVoidModalOpen(false)}
         accountId={id}
         transaction={selectedTxForVoid}
-        onTransactionVoided={() => fetchData()}
+        onTransactionVoided={() => fetchData(false)}
       />
 
       <InviteOwnerModal
         isOpen={isInviteModalOpen}
-        onClose={() => setIsInviteModalOpen(false)}
+        onClose={(wasInviteSent) => {
+          setIsInviteModalOpen(false);
+          if (wasInviteSent) {
+            fetchData(false);
+          }
+        }}
         account={account}
-        onInviteSent={() => fetchData()}
+        onInviteSent={() => {
+          fetchData(false);
+        }}
       />
 
       <ReceiptModal
@@ -476,7 +483,7 @@ export const MoneyAccountDetailPage = () => {
         accountId={id}
         transaction={selectedTxForReceipt}
         isManager={isManager}
-        onReceiptUpdated={() => fetchData()}
+        onReceiptUpdated={() => fetchData(false)}
       />
 
       {/* Close Account Confirmation Modal */}
